@@ -1,12 +1,16 @@
 {
-  "extends": "expo/tsconfig.base",
+  "extends": "./node_modules/expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
     "paths": {
       "@/*": [
         "./*"
       ]
-    }
+    },
+    "jsx": "react-native",
+    "types": ["expo","expo-router","react","react-native"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext"
   },
   "include": [
     "**/*.ts",
