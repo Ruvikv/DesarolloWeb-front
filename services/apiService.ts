@@ -94,10 +94,11 @@ export interface Product {
   id: string;
   name: string;
   description: string;
-  price: number;
+  price?: number;
   image: string;
   category: string;
   stock: number;
+  precios_productos?: { precio_final: number }[];
 }
 
 // Interfaz para la respuesta del backend
@@ -105,11 +106,12 @@ interface BackendProduct {
   id: string;
   nombre: string;
   descripcion: string;
-  precio_final: number;
+  precio_final?: number;
   imagen_principal?: string;
   imagen?: string;
   categoria: string;
   stock: number;
+  precios_productos?: { precio_final: number }[];
 }
 
 // Helper para mapear productos del backend al frontend
@@ -118,7 +120,7 @@ function mapBackendProduct(backendProduct: BackendProduct): Product {
     id: backendProduct.id,
     name: backendProduct.nombre,
     description: backendProduct.descripcion,
-    price: backendProduct.precio_final,
+    price: backendProduct.precio_final ?? backendProduct.precios_productos?.[0]?.precio_final,
     image: backendProduct.imagen_principal || backendProduct.imagen || '',
     category: backendProduct.categoria,
     stock: backendProduct.stock

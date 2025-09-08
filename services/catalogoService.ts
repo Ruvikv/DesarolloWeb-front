@@ -79,7 +79,7 @@ export interface Product {
   id: string;
   name: string;
   description: string;
-  price: number;
+  price?: number;
   image: string;
   category: string;
   stock: number;
@@ -90,11 +90,12 @@ interface BackendProduct {
   id: string;
   nombre: string;
   descripcion: string;
-  precio_final: number;
+  precio_final?: number;
   imagen_principal?: string;
   imagen?: string;
   categoria: string;
   stock: number;
+  precios_productos?: { precio_final: number }[];
 }
 
 // Helper para mapear productos del backend al frontend
@@ -104,7 +105,7 @@ function mapBackendProduct(backendProduct: BackendProduct): Product {
     id: backendProduct.id,
     name: backendProduct.nombre,
     description: backendProduct.descripcion,
-    price: backendProduct.precio_final,
+    price: backendProduct.precio_final ?? backendProduct.precios_productos?.[0]?.precio_final,
     image: normalizeImageUrl(rawImage),
     category: backendProduct.categoria,
     stock: backendProduct.stock
@@ -130,6 +131,11 @@ export const productService = {
       }
       
       const backendProducts: BackendProduct[] = await response.json();
+      console.log('🔍 Productos destacados del backend:', backendProducts);
+      console.log('🔍 Primer producto destacado:', backendProducts[0]);
+      if (backendProducts[0]) {
+        console.log('🔍 Precio del primer producto:', backendProducts[0].precio_final);
+      }
       return backendProducts.map(mapBackendProduct);
     } catch (error) {
       console.error('Error al obtener productos públicos:', error);

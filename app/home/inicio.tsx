@@ -274,11 +274,61 @@ const ProductPrice = styled.Text`
   color: #2e7d32;
   padding: 2px 10px 10px 10px;
 `;
+
+// Nuevos componentes modernos para productos destacados
+const ModernProductCard = styled.View`
+  width: 130px;
+  background-color: #fff;
+  border-radius: 16px;
+  margin-right: 16px;
+  overflow: hidden;
+  shadow-color: #000;
+  shadow-offset: 0px 4px;
+  shadow-opacity: 0.08;
+  shadow-radius: 8px;
+  elevation: 4;
+`;
+const ModernProductImage = styled.Image`
+  width: 100%;
+  height: 90px;
+`;
+const PlaceholderImage = styled.View`
+  width: 100%;
+  height: 90px;
+  background-color: #f8f9fa;
+  align-items: center;
+  justify-content: center;
+`;
+const ModernProductInfo = styled.View`
+  padding: 12px;
+`;
+const ModernProductName = styled.Text`
+  font-size: 13px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 4px;
+`;
+const ModernProductPrice = styled.Text`
+  font-size: 14px;
+  font-weight: 700;
+  color: #27ae60;
+`;
 const Divider = styled.View`
   height: 1px;
   background-color: #e0e0e0;
   margin: 6px 20px 0 20px;
 `;
+
+const formatPrice = (price: number | string) => {
+  const num = Number(price);
+  if (isNaN(num)) return 'Precio no disponible';
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num);
+};
 
 export default function InicioScreen() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -310,12 +360,8 @@ export default function InicioScreen() {
         setProducts(pub);
         setFeatured(dest && dest.length ? dest : pub.slice(0, 10));
         setCategorias(cats);
-        
-        console.log('Productos cargados:', pub.length);
-        console.log('Productos destacados:', dest.length);
-        console.log('Categorías cargadas:', cats.length);
       } catch (e) {
-        console.error('Error al cargar datos:', e);
+        console.error('❌ Error al cargar datos:', e);
         if (!isMountedRef.current) return;
         setProducts([]);
         setFeatured([]);
@@ -439,19 +485,79 @@ export default function InicioScreen() {
         </WelcomeContainer>
       </Header>
       
+      {/* Productos Destacados - Movido arriba con diseño moderno */}
+      <Section>
+        <SectionHeader>
+          <SectionTitle>✨ Productos Destacados</SectionTitle>
+          {loading ? <ActivityIndicator size="small" color="#2196f3" /> : <View />}
+        </SectionHeader>
+
+        
+        <FlatList
+          ref={featuredScrollRef}
+          data={filteredTrending}
+          keyExtractor={(item) => item.id}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          pagingEnabled={false}
+          snapToInterval={140}
+          decelerationRate="fast"
+          contentContainerStyle={{ paddingLeft: 20, paddingRight: 20 }}
+          onScrollToIndexFailed={(info) => {
+            console.log('Scroll failed:', info);
+          }}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              onPress={() => router.push({
+                pathname: '/catalogo/[id]',
+                params: { id: item.id }
+              })}
+            >
+              <ModernProductCard>
+                {item.image ? (
+                  <ModernProductImage
+                    source={{ uri: item.image }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <PlaceholderImage>
+                    <Text style={{ fontSize: 20 }}>📦</Text>
+                  </PlaceholderImage>
+                )}
+                <ModernProductInfo>
+                  <ModernProductName numberOfLines={1}>{item.name}</ModernProductName>
+                  <ModernProductPrice>
+                    {item.price ? formatPrice(item.price) : 'Precio no disponible'}
+                  </ModernProductPrice>
+                </ModernProductInfo>
+              </ModernProductCard>
+            </TouchableOpacity>
+          )}
+          ListEmptyComponent={!loading ? (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <Text style={{ color: '#666', fontSize: 16 }}>🔍 No hay productos destacados</Text>
+              <Text style={{ color: '#999', fontSize: 14, marginTop: 4 }}>Revisa la conexión con el servidor</Text>
+            </View>
+          ) : null}
+        />
+      </Section>
+
       {/* Acciones rápidas */}
       <ActionsGrid>
-        <ActionCard bgColor="#FF6B6B" onPress={() => router.push('/catalogo/explore')}>
+        <ActionCard bgColor="#FF6B6B" onPress={() => router.push('/catalogo/visual')}>
           <ActionIcon>🛍️</ActionIcon>
           <ActionTitle>Catálogo</ActionTitle>
           <ActionSubtitle>Ver productos</ActionSubtitle>
         </ActionCard>
-        <ActionCard bgColor="#4ECDC4" onPress={() => router.push('/catalogo/explore?featured=true')}>
+        <ActionCard bgColor="#4ECDC4" onPress={() => {
+          // Scroll a la sección de destacados que ya está visible arriba
+          featuredScrollRef.current?.scrollToIndex({ index: 0, animated: true });
+        }}>
           <ActionIcon>⭐</ActionIcon>
           <ActionTitle>Destacados</ActionTitle>
           <ActionSubtitle>Lo mejor</ActionSubtitle>
         </ActionCard>
-        <ActionCard bgColor="#45B7D1" onPress={() => router.push('/catalogo/explore?offers=true')}>
+        <ActionCard bgColor="#45B7D1" onPress={() => router.push('/catalogo/explore?filter=ofertas')}>
           <ActionIcon>🏷️</ActionIcon>
           <ActionTitle>Ofertas</ActionTitle>
           <ActionSubtitle>Descuentos</ActionSubtitle>
@@ -497,58 +603,6 @@ export default function InicioScreen() {
       </CategoriesGrid>
 
       <Divider />
-
-      <Section>
-        <SectionHeader>
-          <SectionTitle>Destacados</SectionTitle>
-          {loading ? <ActivityIndicator size="small" color="#2196f3" /> : <View />}
-        </SectionHeader>
-        <FlatList
-          ref={featuredScrollRef}
-          data={filteredTrending}
-          keyExtractor={(item) => item.id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          pagingEnabled={false}
-          snapToInterval={172} // Ancho del ProductCard + margin
-          decelerationRate="fast"
-          contentContainerStyle={{ paddingRight: 20 }}
-          onScrollToIndexFailed={(info) => {
-            // Manejar error de scroll
-            console.log('Scroll failed:', info);
-          }}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => router.push({
-                pathname: '/catalogo/[id]',
-                params: { id: item.id }
-              })}
-            >
-              <ProductCard>
-                {item.image ? (
-                  <Image 
-                    source={{ uri: item.image }} 
-                    style={{ width: '100%', height: 110, resizeMode: 'cover' }} 
-                  />
-                ) : (
-                  <ProductImage>
-                    <Text style={{ color: '#757575', fontSize: 24 }}>📦</Text>
-                    <Text style={{ color: '#757575', fontSize: 12, marginTop: 4 }}>Sin imagen</Text>
-                  </ProductImage>
-                )}
-                <ProductName numberOfLines={2}>{item.name}</ProductName>
-                <ProductPrice>${item.price?.toFixed?.(2) ?? item.price}</ProductPrice>
-              </ProductCard>
-            </TouchableOpacity>
-          )}
-          ListEmptyComponent={!loading ? (
-            <View style={{ padding: 20, alignItems: 'center' }}>
-              <Text style={{ color: '#666', fontSize: 16 }}>🔍 No hay productos destacados</Text>
-              <Text style={{ color: '#999', fontSize: 14, marginTop: 4 }}>Revisa la conexión con el servidor</Text>
-            </View>
-          ) : null}
-        />
-      </Section>
 
       {/* Estadísticas compactas */}
       <View style={{ padding: 20, paddingTop: 10 }}>
