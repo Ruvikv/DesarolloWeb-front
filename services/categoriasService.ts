@@ -7,7 +7,7 @@ const API_BASE_URL = 'https://mi-tienda-backend-o9i7.onrender.com';
 // Crear instancia de axios para categorías
 const categoriasClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  timeout: 10000,
 });
 
 // Interceptor para agregar token a las peticiones (omitir si x-skip-auth)
@@ -63,39 +63,6 @@ function extractData<T>(response: AxiosResponse<any>): T {
   return body as T;
 }
 
-// Reintentos para GET con backoff exponencial
-function shouldRetry(error: any): boolean {
-  const status = error?.response?.status;
-  return (
-    error?.code === 'ECONNABORTED' ||
-    !error?.response ||
-    status === 502 || status === 503 || status === 504
-  );
-}
-
-function delay(ms: number) { return new Promise(res => setTimeout(res, ms)); }
-
-async function getWithRetry<T>(url: string, config: any = {}, tries = 3, baseDelay = 1000): Promise<AxiosResponse<T>> {
-  let lastError: any;
-  for (let attempt = 0; attempt < tries; attempt++) {
-    try {
-      const resp = await categoriasClient.get<T>(url, config);
-      return resp;
-    } catch (error: any) {
-      lastError = error;
-      if (attempt < tries - 1 && shouldRetry(error)) {
-        const wait = baseDelay * Math.pow(2, attempt);
-        // eslint-disable-next-line no-console
-        console.warn(`GET ${url} falló (intento ${attempt + 1}/${tries}). Reintentando en ${wait}ms...`);
-        await delay(wait);
-        continue;
-      }
-      throw error;
-    }
-  }
-  throw lastError;
-}
-
 // Interfaces para categorías
 export interface Categoria {
   id: string;
@@ -112,12 +79,19 @@ export interface Categoria {
 export const categoriasService = {
   obtenerTodas: async (): Promise<Categoria[]> => {
     try {
-      const response = await getWithRetry<Categoria[]>('/categorias', {
-        // Usar bandera local para el interceptor (endpoint público)
-        ...( { skipAuth: true } as any ),
-        withCredentials: false,
+      const response = await fetch(`${API_BASE_URL}/categorias`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
       });
-      const categorias = extractData<Categoria[]>(response);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const categorias: Categoria[] = await response.json();
       return categorias.filter(cat => cat.activo); // Solo categorías activas
     } catch (error) {
       console.error('Error al obtener categorías:', error);
@@ -127,11 +101,19 @@ export const categoriasService = {
 
   obtenerPorId: async (id: string): Promise<Categoria> => {
     try {
-      const response = await getWithRetry<Categoria>(`/categorias/${id}`, {
-        ...( { skipAuth: true } as any ),
-        withCredentials: false,
+      const response = await fetch(`${API_BASE_URL}/categorias/${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
       });
-      const categoria = extractData<Categoria>(response);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const categoria: Categoria = await response.json();
       return categoria;
     } catch (error) {
       console.error('Error al obtener categoría:', error);

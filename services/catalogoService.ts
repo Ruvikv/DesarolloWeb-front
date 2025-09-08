@@ -117,12 +117,19 @@ function mapBackendProduct(backendProduct: BackendProduct): Product {
 export const productService = {
   getPublicProducts: async (): Promise<Product[]> => {
     try {
-      const response = await catalogoClient.get('/catalogo/publico', {
-        // Evitar headers personalizados; usar bandera local para el interceptor
-        ...( { skipAuth: true } as any ),
-        withCredentials: false,
+      const response = await fetch(`${API_BASE_URL}/catalogo/publico`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
       });
-      const backendProducts = extractData<BackendProduct[]>(response);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const backendProducts: BackendProduct[] = await response.json();
       return backendProducts.map(mapBackendProduct);
     } catch (error) {
       console.error('Error al obtener productos públicos:', error);
@@ -130,28 +137,22 @@ export const productService = {
     }
   },
 
-  getProductById: async (id: string): Promise<Product> => {
-    try {
-      const response = await catalogoClient.get(`/catalogo/producto/${id}`, {
-        ...( { skipAuth: true } as any ),
-        withCredentials: false,
-      });
-      const backendProduct = extractData<BackendProduct>(response);
-      return mapBackendProduct(backendProduct);
-    } catch (error) {
-      console.error('Error al obtener producto:', error);
-      throw error;
-    }
-  },
-
   getVisualCatalog: async (): Promise<Product[]> => {
     try {
-      const response = await catalogoClient.get('/catalogo/visual', {
-        ...( { skipAuth: true } as any ),
-        // Usar configuración específica para evitar problemas CORS
-        withCredentials: false,
+      // Usar fetch con mode: 'cors' y headers apropiados para evitar problemas CORS
+      const response = await fetch(`${API_BASE_URL}/catalogo/visual`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
       });
-      const backendProducts = extractData<BackendProduct[]>(response);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const backendProducts: BackendProduct[] = await response.json();
       return backendProducts.map(mapBackendProduct);
     } catch (error) {
       console.error('Error al obtener catálogo visual:', error);
@@ -161,11 +162,19 @@ export const productService = {
 
   getFeaturedProducts: async (): Promise<Product[]> => {
     try {
-      const response = await catalogoClient.get('/catalogo/destacados', {
-        ...( { skipAuth: true } as any ),
-        withCredentials: false,
+      const response = await fetch(`${API_BASE_URL}/catalogo/destacados`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
       });
-      const backendProducts = extractData<BackendProduct[]>(response);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const backendProducts: BackendProduct[] = await response.json();
       return backendProducts.map(mapBackendProduct);
     } catch (error) {
       console.error('Error al obtener productos destacados:', error);
@@ -175,11 +184,129 @@ export const productService = {
 
   searchProducts: async (query: string): Promise<Product[]> => {
     try {
-      const response = await catalogoClient.get(`/catalogo/buscar?q=${encodeURIComponent(query)}`, {
-        ...( { skipAuth: true } as any ),
-        withCredentials: false,
+      const response = await fetch(`${API_BASE_URL}/catalogo/buscar?q=${encodeURIComponent(query)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
       });
-      const backendProducts = extractData<BackendProduct[]>(response);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const backendProducts: BackendProduct[] = await response.json();
+      return backendProducts.map(mapBackendProduct);
+    } catch (error) {
+      console.error('Error al buscar productos:', error);
+      throw error;
+    }
+  },
+
+  getProductById: async (id: string): Promise<Product> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/catalogo/producto/${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const backendProduct: BackendProduct = await response.json();
+      return mapBackendProduct(backendProduct);
+    } catch (error) {
+      console.error('Error al obtener producto por ID:', error);
+      throw error;
+    }
+  }
+};
+
+export default {
+  getPublicProducts: productService.getPublicProducts,
+  getProductById: async (id: string): Promise<Product> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/catalogo/producto/${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const backendProduct: BackendProduct = await response.json();
+      return mapBackendProduct(backendProduct);
+    } catch (error) {
+      console.error('Error al obtener producto por ID:', error);
+      throw error;
+    }
+  },
+  getVisualCatalog: async (): Promise<Product[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/catalogo/visual`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const backendProducts: BackendProduct[] = await response.json();
+      return backendProducts.map(mapBackendProduct);
+    } catch (error) {
+      console.error('Error al obtener catálogo visual:', error);
+      throw error;
+    }
+  },
+  getFeaturedProducts: async (): Promise<Product[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/catalogo/destacados`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const backendProducts: BackendProduct[] = await response.json();
+      return backendProducts.map(mapBackendProduct);
+    } catch (error) {
+      console.error('Error al obtener productos destacados:', error);
+      throw error;
+    }
+  },
+  searchProducts: async (query: string): Promise<Product[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/catalogo/buscar?q=${encodeURIComponent(query)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const backendProducts: BackendProduct[] = await response.json();
       return backendProducts.map(mapBackendProduct);
     } catch (error) {
       console.error('Error al buscar productos:', error);
@@ -187,5 +314,3 @@ export const productService = {
     }
   }
 };
-
-export default catalogoClient;

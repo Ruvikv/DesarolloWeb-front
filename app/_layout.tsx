@@ -1,23 +1,13 @@
 import React, { useEffect } from "react";
 import { Drawer } from "expo-router/drawer";
 import { AuthProvider } from "../contexts/AuthContext";
-import { productService } from "../services/catalogoService";
+import { prewarmService } from "../services/prewarmService";
 
 export default function RootLayout() {
   // Precalentamiento del backend (Render puede tardar en despertar)
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        // Llamada silenciosa para que el servidor "despierte"
-        await productService.getPublicProducts();
-      } catch (e) {
-        // Silenciar cualquier error inicial de warmup
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
+    // Iniciar pre-calentamiento en background
+    prewarmService.startWarmup();
   }, []);
 
   return (

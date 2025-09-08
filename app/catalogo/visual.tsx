@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, Dimensions, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { productService, Product } from '../../services/catalogoService';
 
 const { width } = Dimensions.get('window');
@@ -8,6 +9,7 @@ const CARD_W = (width - 48) / 2; // similar al catálogo
 const HERO_H = 180;
 
 export default function VisualCatalog() {
+  const router = useRouter();
   const [items, setItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -48,8 +50,18 @@ export default function VisualCatalog() {
     </View>
   );
 
+  const handleProductPress = (productId: string) => {
+    router.push({
+      pathname: '/catalogo/[id]',
+      params: { id: productId }
+    });
+  };
+
   const renderItem = ({ item }: { item: Product }) => (
-    <TouchableOpacity style={[styles.card, { width: CARD_W }]}> 
+    <TouchableOpacity 
+      style={[styles.card, { width: CARD_W }]}
+      onPress={() => handleProductPress(item.id)}
+    > 
       <Image source={{ uri: item.image }} style={styles.cardImage} />
       <View style={styles.cardBody}>
         <Text style={styles.cardTitle} numberOfLines={2}>{item.name}</Text>

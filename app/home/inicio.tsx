@@ -520,8 +520,8 @@ export default function InicioScreen() {
           renderItem={({ item }) => (
             <TouchableOpacity
               onPress={() => router.push({
-                pathname: '/catalogo/visual',
-                params: { productId: item.id }
+                pathname: '/catalogo/[id]',
+                params: { id: item.id }
               })}
             >
               <ProductCard>
