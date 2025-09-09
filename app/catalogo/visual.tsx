@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, Dimensions, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { productService, Product } from '../../services/catalogoService';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Dimensions, FlatList, Image, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCart } from '../../contexts/CartContext';
+import { Product, productService } from '../../services/catalogoService';
 
 const { width } = Dimensions.get('window');
 const CARD_W = (width - 48) / 2; // similar al catálogo
@@ -10,6 +11,7 @@ const HERO_H = 180;
 
 export default function VisualCatalog() {
   const router = useRouter();
+  const { addItem } = useCart();
   const [items, setItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -57,26 +59,29 @@ export default function VisualCatalog() {
     });
   };
 
+  const handleAddToCart = (product: Product) => {
+    addItem(product, 1);
+    Alert.alert(
+      '¡Producto añadido!',
+      `${product.name} se ha añadido a tu carrito correctamente`,
+      [{ text: 'OK', style: 'default' }]
+    );
+  };
+
   const renderItem = ({ item }: { item: Product }) => (
-    <TouchableOpacity 
-      style={[styles.card, { width: CARD_W }]}
-      onPress={() => handleProductPress(item.id)}
-    > 
-      {item.image ? (
-        <Image source={{ uri: item.image }} style={styles.cardImage} resizeMode="cover" />
-      ) : (
-        <View style={[styles.cardImage, { alignItems: 'center', justifyContent: 'center', backgroundColor: '#e9ecef' }]}>
-          <Text style={{ color: '#6c757d', fontSize: 12 }}>Sin imagen</Text>
-        </View>
-      )}
+    <View style={[styles.card, { width: CARD_W }]}> 
+      <TouchableOpacity onPress={() => handleProductPress(item.id)}>
+        <Image source={{ uri: item.image }} style={styles.cardImage} />
+      </TouchableOpacity>
       <View style={styles.cardBody}>
         <Text style={styles.cardTitle} numberOfLines={2}>{item.name}</Text>
         <Text style={styles.cardCategory}>{item.category}</Text>
-        <Text style={styles.cardPrice}>
-          {item.price !== undefined ? `$${item.price.toFixed(2)}` : 'Sin precio'}
-        </Text>
+        <Text style={styles.cardPrice}>${item.price.toFixed(2)}</Text>
+        <TouchableOpacity style={styles.addBtn} onPress={() => handleAddToCart(item)}>
+          <Text style={styles.addBtnText}>Añadir al carrito</Text>
+        </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 
   return (
@@ -171,6 +176,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#7b1fa2',
+  },
+  addBtn: {
+    marginTop: 8,
+    backgroundColor: '#7b1fa2',
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  addBtnText: {
+    color: '#fff',
+    fontWeight: '700',
   },
   emptyText: {
     textAlign: 'center',
