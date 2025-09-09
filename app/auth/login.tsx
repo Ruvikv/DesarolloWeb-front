@@ -13,9 +13,10 @@ import {
   Dimensions
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Icon from "react-native-vector-icons/Ionicons";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from '../../contexts/AuthContext';
 import { router } from 'expo-router';
+import { checkNetworkConnection, handleNetworkError } from '../../utils/networkUtils';
 
 const { width, height } = Dimensions.get('window');
 
@@ -49,6 +50,13 @@ const Login = () => {
   };
 
   const handleLogin = async () => {
+    // Verificar conexión
+    const isConnected = await checkNetworkConnection();
+    if (!isConnected) {
+      Alert.alert('Error', 'Sin conexión a internet');
+      return;
+    }
+
     if (!validateForm()) return;
     
     setIsLoading(true);
@@ -58,46 +66,14 @@ const Login = () => {
       await login(formData.email, formData.password);
       
       // Mostrar mensaje de éxito
-      Alert.alert(
-        'Login Exitoso',
-        '¡Bienvenido de vuelta!',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Reset form
-              setFormData({ email: '', password: '' });
-              // Navegar a la pantalla principal
-              router.replace('/home/inicio');
-            }
-          }
-        ]
-      );
+      console.log('Login exitoso');
+      // Reset form
+      setFormData({ email: '', password: '' });
+      // Navegar a la pantalla principal
+      router.replace('/dashboard');
     } catch (error: any) {
       console.error('Error en login:', error);
-      
-      // Manejar diferentes tipos de errores
-      let errorMessage = 'Error desconocido. Intenta nuevamente.';
-      
-      if (error.response) {
-        // Error de respuesta del servidor
-        const status = error.response.status;
-        const data = error.response.data;
-        
-        if (status === 401) {
-          errorMessage = 'Credenciales incorrectas. Verifica tu email y contraseña.';
-        } else if (status === 400) {
-          errorMessage = data.message || 'Datos de login inválidos.';
-        } else if (status >= 500) {
-          errorMessage = 'Error del servidor. Intenta más tarde.';
-        } else {
-          errorMessage = data.message || `Error ${status}. Intenta nuevamente.`;
-        }
-      } else if (error.request) {
-        // Error de red
-        errorMessage = 'Sin conexión al servidor. Verifica tu conexión a internet.';
-      }
-      
+      const errorMessage = handleNetworkError(error);
       Alert.alert('Error de Login', errorMessage);
     } finally {
       setIsLoading(false);
@@ -132,19 +108,19 @@ const Login = () => {
               colors={['#8426f5', '#563acc']}
               style={styles.iconContainer}
             >
-              <Icon name="lock-closed-outline" size={50} color="white" />
+              <Ionicons name="lock-closed-outline" size={50} color="white" />
             </LinearGradient>
             <Text style={styles.title}>Iniciar Sesión</Text>
             <Text style={styles.subtitle}>Accede a tu cuenta gaming</Text>
           </View>
 
           {/* Login Form */}
-          <View style={styles.formContainer}>
+          <View style={styles.formContainer} role="form">
             {/* Email Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email</Text>
               <View style={styles.inputWrapper}>
-                <Icon name="mail-outline" size={20} color="#6c757d" style={styles.inputIcon} />
+                <Ionicons name="mail-outline" size={20} color="#6c757d" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   value={formData.email}
@@ -162,7 +138,7 @@ const Login = () => {
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Contraseña</Text>
               <View style={styles.inputWrapper}>
-                <Icon name="lock-closed-outline" size={20} color="#6c757d" style={styles.inputIcon} />
+                <Ionicons name="lock-closed-outline" size={20} color="#6c757d" style={styles.inputIcon} />
                 <TextInput
                   style={styles.passwordInput}
                   value={formData.password}
@@ -176,7 +152,7 @@ const Login = () => {
                   style={styles.eyeButton}
                   onPress={() => setShowPassword(!showPassword)}
                 >
-                  <Icon 
+                  <Ionicons 
                     name={showPassword ? "eye-outline" : "eye-off-outline"} 
                     size={20} 
                     color="#6c757d" 
@@ -216,12 +192,12 @@ const Login = () => {
             {/* Social Login Buttons */}
             <View style={styles.socialButtonsContainer}>
               <TouchableOpacity style={styles.socialButton}>
-                <Icon name="logo-google" size={24} color="#db4437" />
+                <Ionicons name="logo-google" size={24} color="#db4437" />
                 <Text style={styles.socialButtonText}>Google</Text>
               </TouchableOpacity>
               
               <TouchableOpacity style={styles.socialButton}>
-                <Icon name="logo-facebook" size={24} color="#4267B2" />
+                <Ionicons name="logo-facebook" size={24} color="#4267B2" />
                 <Text style={styles.socialButtonText}>Facebook</Text>
               </TouchableOpacity>
             </View>

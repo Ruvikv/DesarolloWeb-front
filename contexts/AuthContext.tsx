@@ -36,47 +36,58 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
 
   const isAuthenticated = !!token && !!user;
 
   // Verificar el estado de autenticación al iniciar la app
   const checkAuthStatus = async () => {
+    if (!isMounted) return;
+    
     try {
       setIsLoading(true);
       const storedToken = await safeAsyncStorage.getItem('authToken');
       
-      if (storedToken) {
+      if (storedToken && isMounted) {
         setToken(storedToken);
         // Aquí podrías hacer una llamada para obtener los datos del usuario
         // Por ahora, asumimos que el token es válido
         // En una implementación real, harías una llamada a /auth/me o similar
         const userData = await safeAsyncStorage.getItem('userData');
-        if (userData) {
+        if (userData && isMounted) {
           setUser(JSON.parse(userData));
         }
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
       // Si hay error, limpiar el estado
-      await logout();
+      if (isMounted) {
+        await logout();
+      }
     } finally {
-      setIsLoading(false);
+      if (isMounted) {
+        setIsLoading(false);
+      }
     }
   };
 
   // Función de login
   const login = async (email: string, password: string) => {
     try {
-      const response = await authService.login({ email, password });
+      const result = await authService.login(email, password);
       
-      // Guardar token y datos del usuario
-      await safeAsyncStorage.setItem('authToken', response.token);
-      if (response.user) {
-        await safeAsyncStorage.setItem('userData', JSON.stringify(response.user));
-        setUser(response.user);
+      if (result.success) {
+        // Guardar token y datos del usuario
+        const { token, user } = result.data;
+        await safeAsyncStorage.setItem('authToken', token);
+        if (user) {
+          await safeAsyncStorage.setItem('userData', JSON.stringify(user));
+          setUser(user);
+        }
+        setToken(token);
+      } else {
+        throw new Error(result.error);
       }
-      
-      setToken(response.token);
     } catch (error) {
       throw error; // Re-lanzar el error para que lo maneje el componente
     }
@@ -99,10 +110,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Verificar estado de autenticación al montar el componente
   useEffect(() => {
+    setIsMounted(true);
+    
     // Solo ejecutar en el cliente, no durante SSR
     if (typeof window === 'undefined') return;
     
     checkAuthStatus();
+    
+    return () => {
+      setIsMounted(false);
+    };
   }, []);
 
   const value: AuthContextType = {

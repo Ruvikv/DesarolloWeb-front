@@ -291,6 +291,7 @@ const ModernProductCard = styled.View`
 const ModernProductImage = styled.Image`
   width: 100%;
   height: 90px;
+  resize-mode: cover;
 `;
 const PlaceholderImage = styled.View`
   width: 100%;

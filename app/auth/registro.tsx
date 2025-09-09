@@ -113,7 +113,7 @@ export default function Registro() {
           </View>
 
           {/* Registration Form */}
-          <View style={styles.formContainer}>
+          <View style={styles.formContainer} role="form">
             {/* Name Fields Row */}
             <View style={styles.nameRow}>
               <View style={[styles.inputContainer, styles.halfWidth]}>

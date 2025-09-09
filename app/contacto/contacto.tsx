@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 import { geolocationService } from '../../services/apiService';
 import * as Location from 'expo-location';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -417,7 +417,7 @@ export default function ContactoScreen() {
             <ContactCardsContainer>
               <ContactCard onPress={openPhone}>
                 <ContactIcon>
-                  <Icon name="call-outline" size={36} color="#667eea" />
+                  <Ionicons name="call-outline" size={36} color="#667eea" />
                 </ContactIcon>
                 <ContactTitle>Teléfono</ContactTitle>
                 <ContactInfo>+1 (234) 567-8900</ContactInfo>
@@ -425,7 +425,7 @@ export default function ContactoScreen() {
 
               <ContactCard onPress={openEmail}>
                 <ContactIcon>
-                  <Icon name="mail-outline" size={36} color="#667eea" />
+                  <Ionicons name="mail-outline" size={36} color="#667eea" />
                 </ContactIcon>
                 <ContactTitle>Email</ContactTitle>
                 <ContactInfo>contacto@tienda.com</ContactInfo>
@@ -433,7 +433,7 @@ export default function ContactoScreen() {
 
               <ContactCard onPress={openLocation}>
                 <ContactIcon>
-                  <Icon name="location-outline" size={36} color="#667eea" />
+                  <Ionicons name="location-outline" size={36} color="#667eea" />
                 </ContactIcon>
                 <ContactTitle>Ubicación</ContactTitle>
                 <ContactInfo>Calle Gaming 123</ContactInfo>
@@ -596,7 +596,7 @@ export default function ContactoScreen() {
               {tiendas.map((t, idx) => (
                 <ContactCard key={`${t.id || idx}`} onPress={() => abrirEnMapas(t.lat, t.lng, t.nombre)}>
                   <ContactIcon>
-                    <Icon name="business-outline" size={32} color="#667eea" />
+                    <Ionicons name="business-outline" size={32} color="#667eea" />
                   </ContactIcon>
                   <ContactTitle>{t.nombre || 'Tienda cercana'}</ContactTitle>
                   <ContactInfo>

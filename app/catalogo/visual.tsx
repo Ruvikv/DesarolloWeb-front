@@ -62,7 +62,7 @@ export default function VisualCatalog() {
       style={[styles.card, { width: CARD_W }]}
       onPress={() => handleProductPress(item.id)}
     > 
-      <Image source={{ uri: item.image }} style={styles.cardImage} />
+      <Image source={{ uri: item.image }} style={styles.cardImage} resizeMode="cover" />
       <View style={styles.cardBody}>
         <Text style={styles.cardTitle} numberOfLines={2}>{item.name}</Text>
         <Text style={styles.cardCategory}>{item.category}</Text>
