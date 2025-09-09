@@ -4,12 +4,26 @@ import { API_CONFIG } from '../config/api';
 const apiClient = axios.create({
   baseURL: API_CONFIG.BASE_URL,
   timeout: API_CONFIG.TIMEOUT,
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  },
-  withCredentials: true, // Importante para las cookies HTTP-only
+  // Remover headers que causan preflight CORS
+  // withCredentials: true, // Comentado para evitar CORS
 });
+
+// Interceptor para manejar headers sin causar preflight
+apiClient.interceptors.request.use(
+  (config) => {
+    // Solo agregar Accept header para evitar preflight
+    config.headers = config.headers || {};
+    config.headers['Accept'] = 'application/json';
+    
+    // Para POST, agregar Content-Type solo si es necesario
+    if (config.method === 'post' && config.data) {
+      config.headers['Content-Type'] = 'application/json';
+    }
+    
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 export interface LoginRequest {
   email: string;

@@ -1,8 +1,9 @@
-import React from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
+import { useRouter } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 const CARD_SIZE = width / 2 - 32;
@@ -30,8 +31,40 @@ const Card: React.FC<CardProps> = ({ title, subtitle, icon, onPress, gradient, a
 );
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, isLoading, logout } = useAuth();
+  const router = useRouter();
   const firstName = user?.name?.split(' ')[0] ?? 'Usuario';
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.replace('/auth/login');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  };
+
+  // Protección de ruta: redirigir al login si no hay usuario autenticado
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.replace('/auth/login');
+    }
+  }, [user, isLoading, router]);
+
+  // Mostrar loading mientras se verifica la autenticación
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>Verificando autenticación...</Text>
+      </View>
+    );
+  }
+
+  // Si no hay usuario, no renderizar nada (se redirigirá)
+  if (!user) {
+    return null;
+  }
 
   const cards: CardProps[] = [
     { title: 'Productos', subtitle: 'Gestiona tu inventario', icon: 'cube-outline', gradient: ['#42e695', '#3bb2b8'] as const, actionLabel: 'Gestionar' },
@@ -44,8 +77,16 @@ const Dashboard = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-      <Text style={styles.greeting}>Hola, {firstName} 👋</Text>
-      <Text style={styles.welcome}>Panel de Administración</Text>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.greeting}>Hola, {firstName} 👋</Text>
+          <Text style={styles.welcome}>Panel de Administración</Text>
+        </View>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={24} color="#ff4444" />
+          <Text style={styles.logoutText}>Cerrar Sesión</Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.grid}>
         {cards.map((card, index) => (
           <Card key={index} {...card} />
@@ -61,6 +102,12 @@ const styles = StyleSheet.create({
   container: {
     padding: 16,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
   greeting: {
     fontSize: 24,
     fontWeight: '600',
@@ -69,7 +116,30 @@ const styles = StyleSheet.create({
   welcome: {
     fontSize: 16,
     color: '#666',
-    marginBottom: 16,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ff4444',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  logoutText: {
+    color: '#ff4444',
+    fontWeight: '600',
+    marginLeft: 6,
+    fontSize: 14,
   },
   grid: {
     flexDirection: 'row',
@@ -108,5 +178,16 @@ const styles = StyleSheet.create({
   actionButtonText: {
     color: '#fff',
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
   },
 });

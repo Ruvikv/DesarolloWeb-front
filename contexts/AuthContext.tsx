@@ -74,9 +74,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Función de login
   const login = async (email: string, password: string) => {
     try {
+      console.log('🔐 AuthContext: Iniciando proceso de login...');
       const result = await authService.login(email, password);
       
       if (result.success) {
+        console.log('✅ AuthContext: Login exitoso, guardando datos...');
         // Guardar token y datos del usuario
         const { token, user } = result.data;
         await safeAsyncStorage.setItem('authToken', token);
@@ -85,10 +87,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(user);
         }
         setToken(token);
+        console.log('✅ AuthContext: Datos guardados correctamente');
       } else {
+        console.log('❌ AuthContext: Error en respuesta del servidor:', result.error);
         throw new Error(result.error);
       }
     } catch (error) {
+      console.log('❌ AuthContext: Error en login:', error);
       throw error; // Re-lanzar el error para que lo maneje el componente
     }
   };

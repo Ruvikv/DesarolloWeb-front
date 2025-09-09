@@ -10,7 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Dimensions
+  Dimensions,
+  ActivityIndicator
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -62,19 +63,32 @@ const Login = () => {
     setIsLoading(true);
     
     try {
+      // Mostrar mensaje informativo sobre posible demora
+      console.log('🔐 Iniciando proceso de login...');
+      
       // Usar el método login del contexto
       await login(formData.email, formData.password);
       
       // Mostrar mensaje de éxito
-      console.log('Login exitoso');
+      console.log('✅ Login exitoso');
       // Reset form
       setFormData({ email: '', password: '' });
       // Navegar a la pantalla principal
       router.replace('/dashboard');
     } catch (error: any) {
-      console.error('Error en login:', error);
+      console.error('❌ Error en login:', error);
       const errorMessage = handleNetworkError(error);
-      Alert.alert('Error de Login', errorMessage);
+      
+      // Mensaje más específico para timeouts
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        Alert.alert(
+          'Servidor Iniciándose', 
+          'El servidor está despertando. Esto puede tomar hasta 30 segundos en el primer acceso. Por favor, inténtalo de nuevo en unos momentos.',
+          [{ text: 'Entendido', style: 'default' }]
+        );
+      } else {
+        Alert.alert('Error de Login', errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -176,11 +190,25 @@ const Login = () => {
                 colors={isLoading ? ['#cccccc', '#999999'] : ['#8426f5', '#563acc']}
                 style={styles.gradientButton}
               >
-                <Text style={styles.buttonText}>
-                  {isLoading ? 'Iniciando...' : 'Iniciar Sesión'}
-                </Text>
+                {isLoading ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="small" color="#fff" style={styles.loadingSpinner} />
+                    <Text style={styles.buttonText}>Conectando al servidor...</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.buttonText}>Iniciar Sesión</Text>
+                )}
               </LinearGradient>
             </TouchableOpacity>
+
+            {/* Loading Message */}
+            {isLoading && (
+              <View style={styles.loadingMessageContainer}>
+                <Text style={styles.loadingMessage}>
+                  ⏳ El servidor puede tardar hasta 30 segundos en responder en el primer acceso
+                </Text>
+              </View>
+            )}
 
             {/* Divider */}
             <View style={styles.dividerContainer}>
@@ -392,5 +420,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#8426f5',
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingSpinner: {
+    marginRight: 8,
+  },
+  loadingMessageContainer: {
+    backgroundColor: '#fff3cd',
+    borderColor: '#ffeaa7',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  loadingMessage: {
+    fontSize: 13,
+    color: '#856404',
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });
