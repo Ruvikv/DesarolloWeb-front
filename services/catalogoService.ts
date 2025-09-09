@@ -74,6 +74,20 @@ function normalizeImageUrl(url: string): string {
   return fixed;
 }
 
+// Asegura que la URL de imagen sea válida para React Native (evita números u objetos)
+function sanitizeImageUrl(input: any): string {
+  try {
+    if (typeof input !== 'string') return '';
+    let fixed = normalizeImageUrl(input);
+    if (!fixed) return '';
+    // Solo permitir http(s). Si el backend devuelve otra cosa (ej: id numérico), evitar crasheo
+    if (!/^https?:\/\//i.test(fixed)) return '';
+    return fixed;
+  } catch {
+    return '';
+  }
+}
+
 // Interfaces para productos
 export interface Product {
   id: string;
@@ -100,13 +114,13 @@ interface BackendProduct {
 
 // Helper para mapear productos del backend al frontend
 function mapBackendProduct(backendProduct: BackendProduct): Product {
-  const rawImage = backendProduct.imagen_principal || backendProduct.imagen || '';
+  const rawImage: any = backendProduct.imagen_principal || backendProduct.imagen || '';
   return {
     id: backendProduct.id,
     name: backendProduct.nombre,
     description: backendProduct.descripcion,
     price: backendProduct.precio_final ?? backendProduct.precios_productos?.[0]?.precio_final,
-    image: normalizeImageUrl(rawImage),
+    image: sanitizeImageUrl(rawImage),
     category: backendProduct.categoria,
     stock: backendProduct.stock
   };
