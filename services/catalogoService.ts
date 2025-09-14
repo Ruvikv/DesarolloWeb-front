@@ -145,10 +145,10 @@ export const productService = {
       }
       
       const backendProducts: BackendProduct[] = await response.json();
-      console.log('🔍 Productos destacados del backend:', backendProducts);
-      console.log('🔍 Primer producto destacado:', backendProducts[0]);
+      // console.log('🔍 Productos destacados del backend:', backendProducts);
+      // console.log('🔍 Primer producto destacado:', backendProducts[0]);
       if (backendProducts[0]) {
-        console.log('🔍 Precio del primer producto:', backendProducts[0].precio_final);
+        // console.log('🔍 Precio del primer producto:', backendProducts[0].precio_final);
       }
       return backendProducts.map(mapBackendProduct);
     } catch (error) {

@@ -1,29 +1,33 @@
+import { Stack } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
   Alert,
+  Dimensions,
   KeyboardAvoidingView,
   Platform,
-  Dimensions
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { authService } from '../../services/authService';
 
 const { width, height } = Dimensions.get('window');
 
-export default function Registro() {
+export default function registerAdmin() {
   const [formData, setFormData] = useState({
     firstName: '',
+    activationCode: "",
     lastName: '',
     email: '',
     phone: '',
     password: '',
     confirmPassword: '',
-    acceptTerms: false
+    acceptTerms: false,
+    direccion: '',
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -66,36 +70,63 @@ export default function Registro() {
       Alert.alert('Error', 'Debes aceptar los términos y condiciones');
       return false;
     }
+    if (!formData.activationCode){
+      Alert.alert('Error', 'El codigo de activacion es obligatorio')
+      return false;
+    }
+    if (!formData.direccion){
+      Alert.alert('Error', 'La dirección es obligatoria')
+      return false;
+    }
+
     return true;
   };
 
-  const handleSubmit = () => {
-    if (validateForm()) {
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+
+    try {
+      const response = await authService.createProfileAdmin(
+        formData.firstName,
+        formData.activationCode,   
+        formData.lastName,         
+        formData.email,            
+        formData.phone,
+        formData.password,
+        formData.direccion,
+      );
       Alert.alert(
-        'Registro Exitoso',
-        '¡Tu cuenta ha sido creada correctamente!',
+        "Registro Exitoso",
+        "¡Tu cuenta ha sido creada correctamente!",
         [
           {
-            text: 'OK',
+            text: "OK",
             onPress: () => {
               // Reset form
               setFormData({
-                firstName: '',
-                lastName: '',
-                email: '',
-                phone: '',
-                password: '',
-                confirmPassword: '',
-                acceptTerms: false
+                activationCode: "",
+                firstName: "",
+                lastName: "",
+                email: "",
+                phone: "",
+                password: "",
+                confirmPassword: "",
+                direccion: "",
+                acceptTerms: false,
               });
-            }
-          }
+            },
+          },
         ]
       );
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "No se pudo completar el registro");
     }
   };
 
+
   return (
+    <>
+      <Stack.Screen options={{ title: "Registro" }} />
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -114,6 +145,37 @@ export default function Registro() {
 
           {/* Registration Form */}
           <View style={styles.formContainer} role="form">
+            
+            {/* Email */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Email *</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.email}
+                onChangeText={(value) => handleInputChange('email', value)}
+                placeholder="tu@email.com"
+                placeholderTextColor="#999"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Codigo de Activacion *</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.activationCode}
+                onChangeText={(value) => handleInputChange('activationCode', value)}
+                placeholder="1234-5678-ABCD"
+                placeholderTextColor="#999"
+                // keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
             {/* Name Fields Row */}
             <View style={styles.nameRow}>
               <View style={[styles.inputContainer, styles.halfWidth]}>
@@ -141,21 +203,6 @@ export default function Registro() {
               </View>
             </View>
 
-            {/* Email */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email *</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.email}
-                onChangeText={(value) => handleInputChange('email', value)}
-                placeholder="tu@email.com"
-                placeholderTextColor="#999"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-
             {/* Phone */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Teléfono</Text>
@@ -166,6 +213,19 @@ export default function Registro() {
                 placeholder="+1 (234) 567-8900"
                 placeholderTextColor="#999"
                 keyboardType="phone-pad"
+              />
+            </View>
+
+            {/* Direccion */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Direccion</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.direccion}
+                onChangeText={(value) => handleInputChange('direccion', value)}
+                placeholder="av Santiago Marzo 300"
+                placeholderTextColor="#999"
+                autoCapitalize="words"
               />
             </View>
 
@@ -245,6 +305,7 @@ export default function Registro() {
         </ScrollView>
        </KeyboardAvoidingView>
      </SafeAreaView>
+     </>
    );
 }
 

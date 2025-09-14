@@ -1,28 +1,31 @@
-import React, { useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { 
-  StyleSheet, 
-  Text, 
-  TextInput, 
-  View, 
-  TouchableOpacity,
+import { router } from 'expo-router';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
   Alert,
+  Dimensions,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Dimensions,
-  ActivityIndicator
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import Icon from "react-native-vector-icons/Ionicons";
 import { useAuth } from '../../contexts/AuthContext';
-import { router } from 'expo-router';
 import { checkNetworkConnection, handleNetworkError } from '../../utils/networkUtils';
+
 
 const { width, height } = Dimensions.get('window');
 
 const Login = () => {
   const { login } = useAuth();
+  const [register, setRegister] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -64,19 +67,19 @@ const Login = () => {
     
     try {
       // Mostrar mensaje informativo sobre posible demora
-      console.log('🔐 Iniciando proceso de login...');
+      // console.log('🔐 Iniciando proceso de login...');
       
       // Usar el método login del contexto
       await login(formData.email, formData.password);
       
       // Mostrar mensaje de éxito
-      console.log('✅ Login exitoso');
+      // console.log('✅ Login exitoso');
       // Reset form
       setFormData({ email: '', password: '' });
       // Navegar a la pantalla principal
       router.replace('/dashboard');
     } catch (error: any) {
-      console.error('❌ Error en login:', error);
+      // console.error('❌ Error en login:', error);
       const errorMessage = handleNetworkError(error);
       
       // Mensaje más específico para timeouts
@@ -201,14 +204,65 @@ const Login = () => {
               </LinearGradient>
             </TouchableOpacity>
 
-            {/* Loading Message */}
-            {isLoading && (
-              <View style={styles.loadingMessageContainer}>
-                <Text style={styles.loadingMessage}>
-                  ⏳ El servidor puede tardar hasta 30 segundos en responder en el primer acceso
+            {/* Register Link */}
+            <View style={styles.registerLinkContainer}>
+              <Text style={styles.registerText}>¿No tienes una cuenta? </Text>
+              <TouchableOpacity onPress={() => setRegister(true)}>
+                <Text style={styles.registerLink}>Regístrate</Text>
+              </TouchableOpacity>
+            </View>
+
+            {register && (
+            <View style={{ flexDirection: "row", marginTop: 20 }}>
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 2,
+                  borderColor: "#4c54afff",
+                  padding: 10,
+                  borderRadius: 8,
+                  marginRight: 5, // separación
+                }}
+                onPress={() => {
+                  setRegister(false);
+                  router.push("/auth/registerAdmin");
+                }}
+              >
+                <Icon name="person-circle-outline" size={20} color="#4c54afff" />
+                <Text style={{ color: "#4c54afff", fontWeight: "600", fontSize: 16, marginLeft: 6 }}>
+                  Admin
                 </Text>
-              </View>
-            )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 2,
+                  borderColor: "#4caf50",
+                  padding: 10,
+                  borderRadius: 8,
+                  marginLeft: 5, // separación
+                }}
+                onPress={() => {
+                  setRegister(false);
+                  router.push("/auth/registerRevendedor");
+                }}
+              >
+                <Icon name="business-outline" size={20} color="#4caf50" />
+                <Text style={{ color: "#4caf50", fontWeight: "600", fontSize: 16, marginLeft: 6 }}>
+                  Revendedor
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+
 
             {/* Divider */}
             <View style={styles.dividerContainer}>
@@ -230,13 +284,6 @@ const Login = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Register Link */}
-            <View style={styles.registerLinkContainer}>
-              <Text style={styles.registerText}>¿No tienes una cuenta? </Text>
-              <TouchableOpacity>
-                <Text style={styles.registerLink}>Regístrate</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -443,5 +490,5 @@ const styles = StyleSheet.create({
     color: '#856404',
     textAlign: 'center',
     fontWeight: '500',
-  },
+  }
 });
