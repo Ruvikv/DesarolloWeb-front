@@ -39,8 +39,19 @@ export interface LoginResponse {
   };
 }
 
+export interface RegisterRequest {
+  firstName: string;
+  activationCode: string;
+  lastName: string;
+  email: string;
+  phone: number;
+  password: string;
+  direccion: string;
+}
+
 // Servicios de autenticación
 export const authService = {
+
   async login(email: string, password: string) {
     try {
       const response = await apiClient.post('/auth/login', {
@@ -67,6 +78,45 @@ export const authService = {
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Error al obtener perfil');
+    }
+  },
+
+
+  async createProfileAdmin(nombre: string,codigo:string, apellido: string, email: string, telefono: number, password: string,direccion: string){
+    try{
+      const response = await apiClient.post('/auth/register/admin-con-codigo', {
+        codigo: codigo,
+        email: email,
+        password: password,
+        nombre: nombre,
+        apellido: apellido,
+        telefono: telefono,
+        direccion: direccion
+      });
+      // console.log("response",response)
+      return response.data
+    } catch (error: any) {
+      // console.log("error", error)
+      throw new Error(error.response?.data?.message)
+    }
+  },
+
+  async createProfileRevendedor(nombreNegocio: string,nombre:string, apellido: string, condicionFiscal: string, email: string, telefono: number,password: string){
+    try{
+      const response = await apiClient.post('/auth/register/revendedor', {
+        nombreNegocio: nombreNegocio,
+        nombre: nombre,
+        apellido: apellido,
+        condicionFiscal: condicionFiscal,
+        email: email,
+        telefono: telefono,
+        password: password,
+      });
+      console.log("response",response)
+      return response.data
+    } catch (error: any) {
+      console.log("error", error)
+      throw new Error(error.response?.data?.message)
     }
   }
 };

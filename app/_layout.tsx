@@ -1,12 +1,11 @@
-import React, { useEffect } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { Drawer } from "expo-router/drawer";
-import { Link } from "expo-router";
+import React, { useEffect } from "react";
+import { TouchableOpacity } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { prewarmService } from "../services/prewarmService";
-import { Ionicons } from "@expo/vector-icons";
-import { TouchableOpacity } from "react-native";
-import { useRouter } from "expo-router";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 function BackButton() {
   const router = useRouter();
@@ -24,8 +23,13 @@ function DrawerLayout() {
     <Drawer screenOptions={{ headerRight: () => <BackButton /> }}>
       {/* Ocultar la ruta index del menú */}
       <Drawer.Screen name="index" options={{ drawerItemStyle: { display: 'none' } }} />
+      {/* Ocultar la ruta register del menú */}
+      <Drawer.Screen name="auth/registerAdmin" options={{ drawerItemStyle: { display: 'none'  } }}  />
+      {/* Ocultar la ruta register del menú */}
+      <Drawer.Screen name="auth/registerRevendedor" options={{ drawerItemStyle: { display: 'none'  } }}  />
       {/* Ocultar ruta legacy home/home para evitar botón Home/Home duplicado */}
       <Drawer.Screen name="home/home" options={{ drawerItemStyle: { display: 'none' } }} />
+
 
       <Drawer.Screen name="home/inicio" options={{ title: "Inicio" }} />
       {/* Solo mostrar Dashboard si el usuario está autenticado */}
@@ -40,7 +44,6 @@ function DrawerLayout() {
       <Drawer.Screen name="catalogo/explore" options={{ title: "Explorar" }} />
       <Drawer.Screen name="catalogo/[id]" options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="contacto/contacto" options={{ title: "Contacto" }} />
-      <Drawer.Screen name="auth/registro" options={{ title: "Registro" }} />
       <Drawer.Screen name="auth/login" options={{ title: "Login" }} />
     </Drawer>
   );
