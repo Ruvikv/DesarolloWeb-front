@@ -32,11 +32,11 @@ function DrawerLayout() {
 
 
       <Drawer.Screen name="home/inicio" options={{ title: "Inicio" }} />
-      {/* Solo mostrar Dashboard si el usuario está autenticado */}
+      {/* Solo mostrar Panel si el usuario está autenticado */}
       <Drawer.Screen 
         name="dashboard" 
         options={{ 
-          title: "Dashboard",
+          title: "Panel de Control",
           drawerItemStyle: user ? {} : { display: 'none' }
         }} 
       />
@@ -44,7 +44,11 @@ function DrawerLayout() {
       <Drawer.Screen name="catalogo/explore" options={{ title: "Explorar" }} />
       <Drawer.Screen name="catalogo/[id]" options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="contacto/contacto" options={{ title: "Contacto" }} />
-      <Drawer.Screen name="auth/login" options={{ title: "Login" }} />
+      <Drawer.Screen name="auth/login" options={{ title: "Iniciar sesión" }} />
+      {/* Ocultar pantallas de administración del Drawer público */}
+      <Drawer.Screen name="compras" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="revendedores" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="estadisticas" options={{ drawerItemStyle: { display: 'none' } }} />
     </Drawer>
   );
 }

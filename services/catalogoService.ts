@@ -1,13 +1,17 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { safeAsyncStorage } from './storageUtils';
+import { fetchWithTimeout } from './httpUtils';
+import { Platform } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import { API_CONFIG } from '../config/api.js';
 
 // Configuración base de la API
-const API_BASE_URL = 'https://mi-tienda-backend-o9i7.onrender.com';
+const API_BASE_URL = API_CONFIG.BASE_URL;
 
 // Crear instancia de axios para catálogo
 const catalogoClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: API_CONFIG.TIMEOUT || 30000, // Usar timeout de config (30s) para cold starts de Render
 });
 
 // Interceptor para agregar token a las peticiones (omitir si x-skip-auth)
@@ -132,12 +136,13 @@ function mapBackendProduct(backendProduct: BackendProduct): Product {
 export const productService = {
   getPublicProducts: async (): Promise<Product[]> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/catalogo/publico`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/catalogo/publico`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          Accept: 'application/json',
         },
         mode: 'cors',
+        timeoutMs: 30000,
       });
       
       if (!response.ok) {
@@ -160,12 +165,13 @@ export const productService = {
   getVisualCatalog: async (): Promise<Product[]> => {
     try {
       // Usar fetch con mode: 'cors' y headers apropiados para evitar problemas CORS
-      const response = await fetch(`${API_BASE_URL}/catalogo/visual`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/catalogo/visual`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          Accept: 'application/json',
         },
         mode: 'cors',
+        timeoutMs: 30000,
       });
       
       if (!response.ok) {
@@ -182,12 +188,13 @@ export const productService = {
 
   getFeaturedProducts: async (): Promise<Product[]> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/catalogo/destacados`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/catalogo/destacados`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          Accept: 'application/json',
         },
         mode: 'cors',
+        timeoutMs: 30000,
       });
       
       if (!response.ok) {
@@ -204,12 +211,13 @@ export const productService = {
 
   searchProducts: async (query: string): Promise<Product[]> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/catalogo/buscar?q=${encodeURIComponent(query)}`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/catalogo/buscar?q=${encodeURIComponent(query)}`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          Accept: 'application/json',
         },
         mode: 'cors',
+        timeoutMs: 30000,
       });
       
       if (!response.ok) {
@@ -226,12 +234,13 @@ export const productService = {
 
   getProductById: async (id: string): Promise<Product> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/catalogo/producto/${id}`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/catalogo/producto/${id}`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          Accept: 'application/json',
         },
         mode: 'cors',
+        timeoutMs: 30000,
       });
       
       if (!response.ok) {
@@ -242,6 +251,73 @@ export const productService = {
       return mapBackendProduct(backendProduct);
     } catch (error) {
       console.error('Error al obtener producto por ID:', error);
+      throw error;
+    }
+  },
+  
+  downloadCatalogExcel: async (): Promise<void> => {
+    try {
+      const token = await safeAsyncStorage.getItem('authToken');
+      const headers: Record<string, string> = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const endpoint = `${API_BASE_URL}/catalogo/descargar/excel`;
+      if (Platform.OS === 'web') {
+        const res = await fetchWithTimeout(endpoint, {
+          method: 'GET',
+          headers,
+          mode: 'cors',
+          timeoutMs: 30000,
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'catalogo.xlsx';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } else {
+        await WebBrowser.openBrowserAsync(endpoint, { enableDefaultShareMenuItem: true });
+      }
+    } catch (error) {
+      console.error('Error al descargar Excel:', error);
+      throw error;
+    }
+  },
+
+  downloadCatalogPDF: async (): Promise<void> => {
+    try {
+      const token = await safeAsyncStorage.getItem('authToken');
+      const headers: Record<string, string> = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      headers['Accept'] = 'application/pdf';
+
+      const endpoint = `${API_BASE_URL}/productos/exportar/pdf`;
+      if (Platform.OS === 'web') {
+        const res = await fetchWithTimeout(endpoint, {
+          method: 'GET',
+          headers,
+          mode: 'cors',
+          timeoutMs: 30000,
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'catalogo.pdf';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } else {
+        await WebBrowser.openBrowserAsync(endpoint, { enableDefaultShareMenuItem: true });
+      }
+    } catch (error) {
+      console.error('Error al descargar PDF:', error);
       throw error;
     }
   }
@@ -249,88 +325,39 @@ export const productService = {
 
 export default {
   getPublicProducts: productService.getPublicProducts,
-  getProductById: async (id: string): Promise<Product> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/catalogo/producto/${id}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        mode: 'cors',
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const backendProduct: BackendProduct = await response.json();
-      return mapBackendProduct(backendProduct);
-    } catch (error) {
-      console.error('Error al obtener producto por ID:', error);
-      throw error;
-    }
-  },
-  getVisualCatalog: async (): Promise<Product[]> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/catalogo/visual`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        mode: 'cors',
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const backendProducts: BackendProduct[] = await response.json();
-      return backendProducts.map(mapBackendProduct);
-    } catch (error) {
-      console.error('Error al obtener catálogo visual:', error);
-      throw error;
-    }
-  },
-  getFeaturedProducts: async (): Promise<Product[]> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/catalogo/destacados`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        mode: 'cors',
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const backendProducts: BackendProduct[] = await response.json();
-      return backendProducts.map(mapBackendProduct);
-    } catch (error) {
-      console.error('Error al obtener productos destacados:', error);
-      throw error;
-    }
-  },
-  searchProducts: async (query: string): Promise<Product[]> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/catalogo/buscar?q=${encodeURIComponent(query)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        mode: 'cors',
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const backendProducts: BackendProduct[] = await response.json();
-      return backendProducts.map(mapBackendProduct);
-    } catch (error) {
-      console.error('Error al buscar productos:', error);
-      throw error;
-    }
-  }
+  getProductById: productService.getProductById,
+  getVisualCatalog: productService.getVisualCatalog,
+  getFeaturedProducts: productService.getFeaturedProducts,
+  searchProducts: productService.searchProducts,
+  downloadCatalogExcel: productService.downloadCatalogExcel,
+  downloadCatalogPDF: productService.downloadCatalogPDF
 };
+
+// Actualización de nombre/descripcion vía catálogo (PATCH JSON)
+export async function actualizarDescripcionCatalogo(
+  id: string,
+  payload: { nombre?: string; descripcion?: string },
+  opts?: { token?: string }
+): Promise<any> {
+  const tok = opts?.token ?? (await safeAsyncStorage.getItem('authToken')) ?? '';
+  
+  try {
+    const headers: Record<string, string> = {};
+    const hasAuth = !!tok;
+    if (hasAuth) headers.Authorization = `Bearer ${tok}`;
+    
+    // Log detallado del token para diagnóstico
+    console.log(`[catalogoService] PATCH /catalogo/producto/${id} hasAuth=${hasAuth}`);
+    console.log(`[catalogoService] Token length: ${tok.length}, starts with: ${tok.substring(0, 20)}...`);
+    console.log(`[catalogoService] Headers:`, headers);
+    
+    const res = await catalogoClient.patch(`/catalogo/producto/${id}`, payload, { headers });
+    return res.data;
+  } catch (error: any) {
+    const status = error?.response?.status;
+    const data = error?.response?.data;
+    console.error(`[catalogoService] PATCH /catalogo/producto/${id} fallo status=${status}`, data);
+    console.error(`[catalogoService] Token usado:`, tok.substring(0, 50) + '...');
+    throw error;
+  }
+}

@@ -1,8 +1,10 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { safeAsyncStorage } from './storageUtils';
+import { fetchWithTimeout } from './httpUtils';
+import { API_CONFIG } from '../config/api.js';
 
 // Configuración base de la API
-const API_BASE_URL = 'https://mi-tienda-backend-o9i7.onrender.com';
+const API_BASE_URL = API_CONFIG.BASE_URL;
 
 // Crear instancia de axios para categorías
 const categoriasClient: AxiosInstance = axios.create({
@@ -79,12 +81,13 @@ export interface Categoria {
 export const categoriasService = {
   obtenerTodas: async (): Promise<Categoria[]> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/categorias`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/categorias`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         mode: 'cors',
+        timeoutMs: 30000,
       });
       
       if (!response.ok) {
@@ -101,12 +104,13 @@ export const categoriasService = {
 
   obtenerPorId: async (id: string): Promise<Categoria> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/categorias/${id}`, {
+      const response = await fetchWithTimeout(`${API_BASE_URL}/categorias/${id}`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         mode: 'cors',
+        timeoutMs: 15000,
       });
       
       if (!response.ok) {
