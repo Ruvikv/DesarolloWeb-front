@@ -15,7 +15,7 @@ export const prewarmService = {
     const baseUrl = 'https://mi-tienda-backend-o9i7.onrender.com';
     
     try {
-      console.log('🏥 Verificando salud del backend...');
+      // console.log('🏥 Verificando salud del backend...');
       
       // Intentar con un endpoint simple primero
       const response = await fetch(`${baseUrl}/catalogo/publico`, {
@@ -26,12 +26,12 @@ export const prewarmService = {
       });
       
       this.isBackendHealthy = true;
-      console.log('✅ Backend está disponible');
+      // console.log('✅ Backend está disponible');
       return true;
     } catch (error) {
       this.isBackendHealthy = false;
       const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
-      console.log(`❌ Backend no disponible: ${errorMsg}`);
+      // console.log(`❌ Backend no disponible: ${errorMsg}`);
       return false;
     }
   },
@@ -47,7 +47,7 @@ export const prewarmService = {
    * Hace ping al backend para despertarlo con estrategia robusta
    */
   async warmupBackend(): Promise<boolean> {
-    console.log('🔥 Iniciando pre-calentamiento robusto del backend...');
+    // console.log('🔥 Iniciando pre-calentamiento robusto del backend...');
     
     const baseUrl = 'https://mi-tienda-backend-o9i7.onrender.com';
     const endpoints = [
@@ -59,17 +59,17 @@ export const prewarmService = {
     // Primero verificar salud del backend
     const isHealthy = await this.checkBackendHealth();
     if (isHealthy) {
-      console.log('✅ Backend ya está disponible!');
+      // console.log('✅ Backend ya está disponible!');
       this.retryCount = 0;
       return true;
     }
     
-    console.log(`🔄 Intento ${this.retryCount + 1}/${this.maxRetries} de despertar backend...`);
+    // console.log(`🔄 Intento ${this.retryCount + 1}/${this.maxRetries} de despertar backend...`);
     
     // Usar múltiples estrategias de ping
     const promises = endpoints.map(async (endpoint) => {
       try {
-        console.log(`🌡️ Despertando servidor con ${endpoint}...`);
+        // console.log(`🌡️ Despertando servidor con ${endpoint}...`);
         
         // Estrategia 1: no-cors para despertar
         await fetch(`${baseUrl}${endpoint}`, {
@@ -90,11 +90,11 @@ export const prewarmService = {
           signal: AbortSignal.timeout(15000)
         });
         
-        console.log(`✅ Ping exitoso a ${endpoint}`);
+        // console.log(`✅ Ping exitoso a ${endpoint}`);
         return true;
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
-        console.log(`⚠️ Error en ping a ${endpoint}: ${errorMsg}`);
+        // console.log(`⚠️ Error en ping a ${endpoint}: ${errorMsg}`);
         return false;
       }
     });
@@ -104,12 +104,12 @@ export const prewarmService = {
     const successCount = results.filter(r => r.status === 'fulfilled' && r.value === true).length;
     
     if (successCount > 0) {
-      console.log(`✅ ${successCount}/${endpoints.length} endpoints respondieron`);
+      // console.log(`✅ ${successCount}/${endpoints.length} endpoints respondieron`);
       this.isBackendHealthy = true;
       this.retryCount = 0;
       return true;
     } else {
-      console.log('❌ Ningún endpoint respondió correctamente');
+      // console.log('❌ Ningún endpoint respondió correctamente');
       return false;
     }
   },
@@ -119,26 +119,26 @@ export const prewarmService = {
    * Usa exponential backoff y manejo inteligente de errores
    */
   startWarmup(): void {
-    console.log('🚀 Iniciando sistema robusto de pre-calentamiento...');
+    // console.log('🚀 Iniciando sistema robusto de pre-calentamiento...');
     
     const attemptWarmup = async () => {
       try {
         const success = await this.warmupBackend();
         
         if (success) {
-          console.log('🎉 Backend despertado exitosamente!');
+          // console.log('🎉 Backend despertado exitosamente!');
           this.retryCount = 0;
           return true;
         } else {
           this.retryCount++;
           
           if (this.retryCount >= this.maxRetries) {
-            console.log('❌ Máximo de reintentos alcanzado. Backend podría estar completamente inactivo.');
+            // console.log('❌ Máximo de reintentos alcanzado. Backend podría estar completamente inactivo.');
             return false;
           }
           
           const delay = this.getBackoffDelay();
-          console.log(`⏳ Esperando ${delay/1000}s antes del siguiente intento...`);
+          // console.log(`⏳ Esperando ${delay/1000}s antes del siguiente intento...`);
           
           setTimeout(() => {
             attemptWarmup();
@@ -148,7 +148,7 @@ export const prewarmService = {
         }
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
-        console.log(`💥 Error crítico en pre-calentamiento: ${errorMsg}`);
+        // console.log(`💥 Error crítico en pre-calentamiento: ${errorMsg}`);
         
         this.retryCount++;
         if (this.retryCount < this.maxRetries) {
@@ -168,7 +168,7 @@ export const prewarmService = {
     // También verificar periódicamente si el backend sigue saludable
     const healthCheckInterval = setInterval(async () => {
       if (!this.isBackendHealthy) {
-        console.log('🔍 Backend no saludable, reintentando pre-calentamiento...');
+        // console.log('🔍 Backend no saludable, reintentando pre-calentamiento...');
         this.retryCount = 0; // Reset para nueva serie de intentos
         attemptWarmup();
       }
@@ -177,7 +177,7 @@ export const prewarmService = {
     // Limpiar después de 15 minutos
     setTimeout(() => {
       clearInterval(healthCheckInterval);
-      console.log('🛑 Sistema de pre-calentamiento finalizado');
+      // console.log('🛑 Sistema de pre-calentamiento finalizado');
     }, 900000); // 15 minutos
   },
   
