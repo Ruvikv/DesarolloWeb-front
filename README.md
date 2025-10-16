@@ -21,8 +21,8 @@ Este repositorio contiene la aplicación móvil/web construida con Expo + React 
 - Persistencia de token y estado de usuario con almacenamiento seguro y verificación al iniciar la app
 
 ## Navegación (Drawer)
-- Definido en app/_layout.tsx, proveído dentro de AuthProvider
-- Rutas visibles con títulos personalizados: Inicio, Catálogo Visual, Explorar, Contacto, Registro, Login
+- Definido en app/_layout.tsx, proveído dentro de AuthProvider y CartProvider
+- Rutas visibles con títulos personalizados: Inicio, Catálogo Visual, Explorar, Contacto, Carrito, Registro, Login
 - Rutas ocultas para evitar duplicados: index y home/home
 
 ## Servicios (services/)
@@ -41,12 +41,22 @@ Este repositorio contiene la aplicación móvil/web construida con Expo + React 
 - storageUtils.ts
   - safeAsyncStorage: wrapper SSR-safe de AsyncStorage (getItem/setItem/removeItem con try/catch y early return en SSR)
 
-## Contexto de Autenticación (contexts/)
+## Contextos (contexts/)
 - AuthContext.tsx
   - Expone: user, token, isLoading, isAuthenticated, login, logout, checkAuthStatus
   - checkAuthStatus lee token y datos de usuario desde almacenamiento al inicio
   - login usa authService.login, persiste token y user; logout limpia todo
   - Proveedor global se monta en _layout para que toda la app consuma el estado
+
+- CartContext.tsx
+  - Expone: items, totalItems, totalPrice, addItem, removeItem, increaseQty, decreaseQty, clear
+  - Maneja estado del carrito de compras con useReducer
+  - addItem: agrega producto al carrito (si existe, incrementa cantidad)
+  - removeItem: elimina producto completamente del carrito
+  - increaseQty/decreaseQty: modifica cantidades (decreaseQty elimina si llega a 0)
+  - clear: vacía todo el carrito
+  - totalItems y totalPrice se calculan automáticamente con useMemo
+  - Proveedor global se monta en _layout para acceso desde cualquier pantalla
 
 ## Pantallas
 - Inicio (app/home/inicio.tsx)
@@ -61,9 +71,11 @@ Este repositorio contiene la aplicación móvil/web construida con Expo + React 
 - Catálogo Visual (app/catalogo/visual.tsx)
   - Búsqueda y chips de categorías en la parte superior
   - Grid 2 columnas con card de producto (imagen, nombre, categoría, precio)
+  - Botón "Añadir al carrito" en cada card con confirmación via Alert
   - Filtros: por texto y por categoría (selectedCategory puede venir en params)
-  - Estados: loading, “sin resultados” y lista paginada mediante FlatList/Grid manual
+  - Estados: loading, "sin resultados" y lista paginada mediante FlatList/Grid manual
   - Fuentes de datos: productService (público) y categorías (público)
+  - Integración con CartContext para gestión del carrito
 
 - Explorar (app/catalogo/explore.tsx)
   - Página informativa de marca/tienda: quiénes somos y por qué elegirnos
@@ -73,13 +85,24 @@ Este repositorio contiene la aplicación móvil/web construida con Expo + React 
   - No muestra productos (fue rediseñada para diferenciarse del catálogo)
 
 - Contacto (app/contacto/contacto.tsx)
-  - Información de la tienda y botón “Abrir en Maps”
+  - Información de la tienda y botón "Abrir en Maps"
   - Costo de envío (estimado): ingresa dirección y costo base y se consulta geolocationService.calculateShippingCost
   - Búsqueda de tiendas cercanas:
     - Por dirección: geolocationService.getCoordinatesFromAddress + getNearbyStores
     - Con mi ubicación: permisos con expo-location y getCurrentPositionAsync, luego getNearbyStores
   - Mapa integrado simplificado con opción de abrir el mapa del sistema
   - Manejo de permisos/errores con mensajes claros
+
+- Carrito (app/carrito.tsx)
+  - Lista de productos agregados desde el catálogo con cantidades
+  - Controles para aumentar/disminuir cantidad de cada producto
+  - Botón "Quitar" para eliminar productos individuales
+  - Cálculo automático del total de items y precio total
+  - Botón "Finalizar Compra" con flujo de confirmación:
+    - Validación de carrito vacío
+    - Confirmación de procesamiento con mensaje "Se está procesando tu carrito, en breve procederemos al pago y datos de envío"
+    - Mensaje final de confirmación, envio al mail de confirmacion (Método y ruta: POST /usuarios/pedido-consumidor y limpieza del carrito)
+  
 
 ## Framework y galería de estilos
 - Framework: Expo + React Native con expo-router
@@ -92,7 +115,7 @@ Este repositorio contiene la aplicación móvil/web construida con Expo + React 
 
 ## Backend objetivo
 - Base URL configurada en los servicios: https://mi-tienda-backend-o9i7.onrender.com
-- Endpoints utilizados: productos públicos, categorías públicas, geolocalización (coordenadas, distancia, envío, tiendas cercanas) y auth/login
+- Endpoints utilizados: productos públicos, categorías públicas, geolocalización (coordenadas, distancia, envío, tiendas cercanas), auth/login y pedidos del carrito.
 
 ## Notas y buenas prácticas
 - No exponer llaves ni secretos en el repositorio
@@ -131,5 +154,9 @@ Coloca tus imágenes en assets/images/capturas/ con los siguientes nombres y se 
 - Registro
 
 ![Registro](assets/images/capturas/registro.png)
+
+- Carrito
+
+![Carrito](assets/images/capturas/carrito.png)
 
 > 
