@@ -1,3 +1,5 @@
+import { API_CONFIG } from '../config/api.js';
+
 /**
  * Servicio robusto para pre-calentar el backend de Render
  * Incluye health checks, exponential backoff y manejo de ERR_FAILED
@@ -12,7 +14,7 @@ export const prewarmService = {
    * Verifica si el backend está disponible usando un health check
    */
   async checkBackendHealth(): Promise<boolean> {
-    const baseUrl = 'https://mi-tienda-backend-o9i7.onrender.com';
+    const baseUrl = API_CONFIG.BASE_URL;
     
     try {
       // console.log('🏥 Verificando salud del backend...');
@@ -49,7 +51,7 @@ export const prewarmService = {
   async warmupBackend(): Promise<boolean> {
     // console.log('🔥 Iniciando pre-calentamiento robusto del backend...');
     
-    const baseUrl = 'https://mi-tienda-backend-o9i7.onrender.com';
+    const baseUrl = API_CONFIG.BASE_URL;
     const endpoints = [
       '/catalogo/publico',
       '/categorias', 

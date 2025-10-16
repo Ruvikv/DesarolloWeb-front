@@ -42,32 +42,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Verificar el estado de autenticación al iniciar la app
   const checkAuthStatus = async () => {
-    if (!isMounted) return;
-    
     try {
       setIsLoading(true);
       const storedToken = await safeAsyncStorage.getItem('authToken');
       
-      if (storedToken && isMounted) {
+      console.log('🔍 AuthContext: Verificando estado de auth...');
+      console.log('🔍 AuthContext: Token encontrado:', !!storedToken);
+      if (storedToken) {
+        console.log('🔍 AuthContext: Token length:', storedToken.length);
+        console.log('🔍 AuthContext: Token starts with:', storedToken.substring(0, 30) + '...');
+      }
+      
+      if (storedToken) {
         setToken(storedToken);
-        // Aquí podrías hacer una llamada para obtener los datos del usuario
-        // Por ahora, asumimos que el token es válido
-        // En una implementación real, harías una llamada a /auth/me o similar
+        // En una implementación real, podrías obtener los datos del usuario del backend
         const userData = await safeAsyncStorage.getItem('userData');
-        if (userData && isMounted) {
+        if (userData) {
           setUser(JSON.parse(userData));
+          console.log('✅ AuthContext: Usuario restaurado desde storage');
         }
+      } else {
+        console.log('❌ AuthContext: No hay token almacenado');
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
       // Si hay error, limpiar el estado
-      if (isMounted) {
-        await logout();
-      }
+      await logout();
     } finally {
-      if (isMounted) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
   };
 
@@ -80,13 +82,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (result.success) {
         console.log('✅ AuthContext: Login exitoso, guardando datos...');
         // Guardar token y datos del usuario
-        const { token, user } = result.data;
-        await safeAsyncStorage.setItem('authToken', token);
+        // El servidor retorna 'access_token', no 'token'
+        const { access_token, user } = result.data;
+        
+        // Verificar que el token existe antes de acceder a sus propiedades
+        if (!access_token) {
+          console.log('❌ AuthContext: access_token es undefined o null');
+          throw new Error('Token no recibido del servidor');
+        }
+        
+        // Log detallado del token recibido
+        console.log('🔑 AuthContext: Token recibido length:', access_token.length);
+        console.log('🔑 AuthContext: Token starts with:', access_token.substring(0, 30) + '...');
+        
+        await safeAsyncStorage.setItem('authToken', access_token);
         if (user) {
           await safeAsyncStorage.setItem('userData', JSON.stringify(user));
           setUser(user);
         }
-        setToken(token);
+        setToken(access_token);
+        
+        // Verificar que se guardó correctamente
+        const savedToken = await safeAsyncStorage.getItem('authToken');
+        console.log('✅ AuthContext: Token guardado correctamente:', savedToken === access_token);
         console.log('✅ AuthContext: Datos guardados correctamente');
       } else {
         console.log('❌ AuthContext: Error en respuesta del servidor:', result.error);
@@ -95,6 +113,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.log('❌ AuthContext: Error en login:', error);
       throw error; // Re-lanzar el error para que lo maneje el componente
+    } finally {
+      // Asegurar salida de estado de carga tras login
+      setIsLoading(false);
     }
   };
 
@@ -113,19 +134,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Verificar estado de autenticación al montar el componente
+  // Marcar como montado/desmontado
   useEffect(() => {
     setIsMounted(true);
-    
-    // Solo ejecutar en el cliente, no durante SSR
-    if (typeof window === 'undefined') return;
-    
-    checkAuthStatus();
-    
     return () => {
       setIsMounted(false);
     };
   }, []);
+
+  // Ejecutar verificación de auth una vez montado
+  useEffect(() => {
+    if (!isMounted) return;
+    if (typeof window === 'undefined') return;
+    checkAuthStatus();
+  }, [isMounted]);
 
   const value: AuthContextType = {
     user,

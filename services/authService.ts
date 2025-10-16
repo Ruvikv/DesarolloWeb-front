@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_CONFIG } from '../config/api';
+import { API_CONFIG } from '../config/api.js';
 
 const apiClient = axios.create({
   baseURL: API_CONFIG.BASE_URL,
@@ -58,6 +58,8 @@ export const authService = {
         email: email.trim(),
         password: password
       });
+      
+      console.log('🔍 authService: Respuesta del servidor:', response.data);
       
       return {
         success: true,

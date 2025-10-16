@@ -8,10 +8,13 @@ const isServer = typeof window === 'undefined';
 export const safeAsyncStorage = {
   getItem: async (key: string): Promise<string | null> => {
     if (isServer) {
+      console.log(`[safeAsyncStorage] getItem(${key}) - En servidor, retornando null`);
       return null; // En el servidor, siempre devolver null
     }
     try {
-      return await AsyncStorage.getItem(key);
+      const value = await AsyncStorage.getItem(key);
+      console.log(`[safeAsyncStorage] getItem(${key}) - Valor obtenido:`, value ? `${value.length} chars, starts: ${value.substring(0, 20)}...` : 'null');
+      return value;
     } catch (error) {
       console.error(`Error getting item ${key}:`, error);
       return null;

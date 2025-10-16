@@ -1,8 +1,9 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_CONFIG } from '../config/api.js';
 
 // Configuración base de la API
-const API_BASE_URL = 'https://mi-tienda-backend-o9i7.onrender.com';
+const API_BASE_URL = API_CONFIG.BASE_URL;
 
 // Crear instancia de axios
 const apiClient: AxiosInstance = axios.create({
