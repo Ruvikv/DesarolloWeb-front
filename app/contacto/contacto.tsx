@@ -1,20 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Alert,
-  Linking,
-  Dimensions,
+import { Ionicons } from '@expo/vector-icons';
+import * as Linking from 'expo-linking';
+import * as Location from 'expo-location';
+import React, { useEffect, useState } from 'react';
+import {
   ActivityIndicator,
-  TouchableOpacity,
+  Alert,
+  Dimensions,
   Image,
-  View,
+  Platform,
   Text,
-  Platform
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 import { geolocationService } from '../../services/apiService';
-import * as Location from 'expo-location';
-import { Ionicons } from '@expo/vector-icons';
+
 
 const { width } = Dimensions.get('window');
 
@@ -364,6 +365,13 @@ export default function ContactoScreen() {
       const lat = pos.coords.latitude;
       const lng = pos.coords.longitude;
       setCoordsMapa({ lat, lng });
+
+      const url =
+      Platform.OS === 'ios'
+        ? `maps:0,0?q=${lat},${lng}`
+        : `geo:${lat},${lng}?q=${lat},${lng}`;
+      await Linking.openURL(url);
+
       const lista = await geolocationService.getNearbyStores(lat, lng, 5);
       setTiendas(lista || []);
     } catch (e) {
@@ -547,7 +555,7 @@ export default function ContactoScreen() {
               </SubmitButton>
               <SubmitButton onPress={buscarTiendasConMiUbicacion}>
                 {buscandoTiendas ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color="#241212ff" />
                 ) : (
                   <SubmitButtonText>Usar mi ubicación</SubmitButtonText>
                 )}
