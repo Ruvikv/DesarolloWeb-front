@@ -1,12 +1,12 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import React, { useEffect } from "react";
+import { TouchableOpacity } from "react-native";
 import 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { CartProvider } from "../contexts/CartContext";
 import { prewarmService } from "../services/prewarmService";
-import { useRouter } from "expo-router";
-import { TouchableOpacity } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 
 function BackButton() {
   const router = useRouter();
@@ -22,6 +22,8 @@ function DrawerLayout() {
 
   return (
     <Drawer screenOptions={{ headerRight: () => <BackButton /> }}>
+      {/* Rutas ocultas del menú */}
+      <Drawer.Screen name='productos/index' options={{ drawerItemStyle: { display: 'none' } }} />
       {/* Ocultar la ruta index del menú */}
       <Drawer.Screen name="index" options={{ drawerItemStyle: { display: 'none' } }} />
       {/* Rutas de registro ocultas del menú */}
