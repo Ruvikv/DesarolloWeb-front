@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 import { geolocationService } from '../../services/apiService';
+import AddressAutocomplete from '../../components/AddressAutocomplete';
 
 
 const { width } = Dimensions.get('window');
@@ -545,11 +546,10 @@ export default function ContactoScreen() {
             <FormContainer>
               <InputGroup>
                 <Label>Dirección</Label>
-                <Input
+                <AddressAutocomplete
                   value={direccionTiendas}
-                  onChangeText={setDireccionTiendas}
+                  onAddressSelect={setDireccionTiendas}
                   placeholder="Calle 123, Ciudad"
-                  placeholderTextColor="#999"
                 />
               </InputGroup>
               <SubmitButton onPress={buscarTiendasCercanas}>

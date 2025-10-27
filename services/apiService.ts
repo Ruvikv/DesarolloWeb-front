@@ -256,15 +256,16 @@ export const geolocationService = {
 
   calculateShippingCost: async (direccion: string, costoBase: number): Promise<{ costo: number; moneda?: string }> => {
     try {
-      const response = await apiClient.get<ApiResponse<{ costo: number; moneda?: string }>>('/geolocalizacion/envio', {
-        params: { direccion, costoBase },
+      const response = await apiClient.post<ApiResponse<{ costo: number; moneda?: string }>>('/geolocalizacion/costo-envio', {
+        direccion,
+        costoBase,
       });
       return response.data.data;
     } catch (error) {
-      // Si el backend devuelve 401 u otro error, devolver costo estimado basado en el costo base
-      console.warn('Error al calcular costo de envío, usando estimación:', error);
-      const costoEstimado = costoBase * 1.15; // Agregar 15% como estimación de envío
-      return { costo: Math.round(costoEstimado * 100) / 100, moneda: 'USD' };
+      // Fallback: calcular costo estimado (15% adicional)
+      console.warn('Backend falló, usando cálculo estimado de envío');
+      const costoEstimado = Math.round(costoBase * 1.15);
+      return { costo: costoEstimado, moneda: 'USD' };
     }
   },
 
@@ -292,21 +293,58 @@ export const geolocationService = {
       });
       return response.data.data;
     } catch (error) {
-      // Si el backend devuelve 401 u otro error, devolver lista vacía para evitar errores en UI
-      console.warn('Error al obtener tiendas cercanas, devolviendo lista vacía:', error);
+      // Fallback: devolver lista vacía si hay error 401
+      console.warn('Backend falló, devolviendo lista vacía de tiendas cercanas');
       return [];
     }
   },
 
   updateStoreCoordinates: async (payload: { id?: string; lat: number; lng: number; direccion?: string }): Promise<any> => {
     try {
-      const response = await apiClient.post<ApiResponse<any>>('/geolocalizacion/actualizar-coordenadas-tienda', payload);
+      const response = await apiClient.post<ApiResponse<any>>('/geolocalizacion/actualizar-coordenadas', payload);
       return response.data.data;
     } catch (error) {
       console.error('Error al actualizar coordenadas de tienda:', error);
       throw error;
     }
   },
+
+  // Nueva función para obtener sugerencias de direcciones
+  getAddressSuggestions: async (query: string): Promise<{ display_name: string; lat: number; lng: number }[]> => {
+    return await getAddressSuggestions(query);
+  },
 };
 
 export default apiClient;
+
+// Función para obtener sugerencias de direcciones usando Nominatim
+async function getAddressSuggestions(query: string): Promise<{ display_name: string; lat: number; lng: number }[]> {
+  try {
+    if (!query || query.trim().length < 3) return [];
+    
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query.trim())}&limit=5&addressdetails=1`;
+    const resp = await fetch(url, { 
+      headers: { 
+        Accept: 'application/json',
+        'User-Agent': 'MiTiendaApp/1.0'
+      } 
+    });
+    
+    if (!resp.ok) return [];
+    
+    const json = await resp.json();
+    if (Array.isArray(json)) {
+      return json
+        .filter(item => item?.display_name && item?.lat && item?.lon)
+        .map(item => ({
+          display_name: item.display_name,
+          lat: parseFloat(item.lat),
+          lng: parseFloat(item.lon)
+        }))
+        .filter(item => Number.isFinite(item.lat) && Number.isFinite(item.lng));
+    }
+  } catch (error) {
+    console.warn('Error obteniendo sugerencias de direcciones:', error);
+  }
+  return [];
+}
