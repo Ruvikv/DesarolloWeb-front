@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, ActivityIndicator, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCart } from '../../contexts/CartContext';
 import styled from 'styled-components/native';
 import catalogoClient, { Product } from '../../services/catalogoService';
 
@@ -183,6 +184,7 @@ const ActionButtonText = styled.Text`
 `;
 
 export default function ProductDetail() {
+  const { addItem } = useCart();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
@@ -221,6 +223,7 @@ export default function ProductDetail() {
       return;
     }
 
+    addItem(product, 1);
     Alert.alert(
       'Producto agregado',
       `${product.name} ha sido agregado al carrito.`,

@@ -142,7 +142,7 @@ export const productService = {
           Accept: 'application/json',
         },
         mode: 'cors',
-        timeoutMs: 30000,
+        timeoutMs: API_CONFIG.TIMEOUT,
       });
       
       if (!response.ok) {
@@ -171,7 +171,7 @@ export const productService = {
           Accept: 'application/json',
         },
         mode: 'cors',
-        timeoutMs: 30000,
+        timeoutMs: API_CONFIG.TIMEOUT,
       });
       
       if (!response.ok) {
@@ -194,7 +194,7 @@ export const productService = {
           Accept: 'application/json',
         },
         mode: 'cors',
-        timeoutMs: 30000,
+        timeoutMs: API_CONFIG.TIMEOUT,
       });
       
       if (!response.ok) {
@@ -217,7 +217,7 @@ export const productService = {
           Accept: 'application/json',
         },
         mode: 'cors',
-        timeoutMs: 30000,
+        timeoutMs: API_CONFIG.TIMEOUT,
       });
       
       if (!response.ok) {
@@ -240,7 +240,7 @@ export const productService = {
           Accept: 'application/json',
         },
         mode: 'cors',
-        timeoutMs: 30000,
+        timeoutMs: API_CONFIG.TIMEOUT,
       });
       
       if (!response.ok) {
@@ -267,7 +267,7 @@ export const productService = {
           method: 'GET',
           headers,
           mode: 'cors',
-          timeoutMs: 30000,
+          timeoutMs: API_CONFIG.TIMEOUT,
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const blob = await res.blob();
@@ -301,7 +301,7 @@ export const productService = {
           method: 'GET',
           headers,
           mode: 'cors',
-          timeoutMs: 30000,
+          timeoutMs: API_CONFIG.TIMEOUT,
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const blob = await res.blob();

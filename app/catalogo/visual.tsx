@@ -76,7 +76,7 @@ export default function VisualCatalog() {
       <View style={styles.cardBody}>
         <Text style={styles.cardTitle} numberOfLines={2}>{item.name}</Text>
         <Text style={styles.cardCategory}>{item.category}</Text>
-        <Text style={styles.cardPrice}>${item.price.toFixed(2)}</Text>
+        <Text style={styles.cardPrice}>${item.price?.toFixed?.(2) ?? item.price ?? ''}</Text>
         <TouchableOpacity style={styles.addBtn} onPress={() => handleAddToCart(item)}>
           <Text style={styles.addBtnText}>Añadir al carrito</Text>
         </TouchableOpacity>

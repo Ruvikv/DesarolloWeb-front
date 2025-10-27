@@ -15,16 +15,20 @@ export const prewarmService = {
    */
   async checkBackendHealth(): Promise<boolean> {
     const baseUrl = API_CONFIG.BASE_URL;
+    const timeout = Math.min((API_CONFIG.TIMEOUT ?? 30000), 60000);
     
     try {
       // console.log('🏥 Verificando salud del backend...');
       
-      // Intentar con un endpoint simple primero
+      // Intentar con un endpoint simple usando GET y CORS (más compatible)
       const response = await fetch(`${baseUrl}/catalogo/publico`, {
-        method: 'HEAD', // Solo headers, más rápido
-        mode: 'no-cors',
+        method: 'GET',
+        mode: 'cors',
+        headers: {
+          'Accept': 'application/json'
+        },
         cache: 'no-cache',
-        signal: AbortSignal.timeout(10000) // 10 segundos timeout
+        signal: AbortSignal.timeout(timeout)
       });
       
       this.isBackendHealthy = true;
@@ -69,6 +73,7 @@ export const prewarmService = {
     // console.log(`🔄 Intento ${this.retryCount + 1}/${this.maxRetries} de despertar backend...`);
     
     // Usar múltiples estrategias de ping
+    const timeout = Math.min((API_CONFIG.TIMEOUT ?? 30000), 60000);
     const promises = endpoints.map(async (endpoint) => {
       try {
         // console.log(`🌡️ Despertando servidor con ${endpoint}...`);
@@ -78,7 +83,7 @@ export const prewarmService = {
           method: 'GET',
           mode: 'no-cors',
           cache: 'no-cache',
-          signal: AbortSignal.timeout(15000)
+          signal: AbortSignal.timeout(timeout)
         });
         
         // Estrategia 2: cors para verificar respuesta real
@@ -86,10 +91,10 @@ export const prewarmService = {
           method: 'GET', 
           mode: 'cors',
           headers: {
-            'Content-Type': 'application/json'
+            'Accept': 'application/json'
           },
           cache: 'no-cache',
-          signal: AbortSignal.timeout(15000)
+          signal: AbortSignal.timeout(timeout)
         });
         
         // console.log(`✅ Ping exitoso a ${endpoint}`);
