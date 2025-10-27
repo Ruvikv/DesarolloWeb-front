@@ -28,12 +28,19 @@ apiClient.interceptors.request.use(
   async (config) => {
     try {
       const headers = (config.headers = config.headers || {});
-      const skipAuth = (headers as any)['x-skip-auth'] === '1' || (config as any).skipAuth === true;
-      
+      const url = (config.url || '').toString();
+      const isGeolocation = url.includes('/geolocalizacion/');
+      const skipAuthHeader = (headers as any)['x-skip-auth'] === '1' || (config as any).skipAuth === true;
+      const skipAuth = skipAuthHeader || isGeolocation;
+
       if (skipAuth) {
-        // Para peticiones públicas, usar headers mínimos para evitar preflight
-        config.headers = config.headers || {};
-        config.headers['Accept'] = 'application/json';
+        // Para peticiones públicas, usar headers mínimos y marcar skip-auth
+        headers['Accept'] = 'application/json';
+        headers['x-skip-auth'] = '1';
+        // Evitar adjuntar Authorization
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { Authorization: _omitAuth, ...rest } = headers as any;
+        config.headers = rest;
       } else {
         const token = await AsyncStorage.getItem('authToken');
         if (token) {
