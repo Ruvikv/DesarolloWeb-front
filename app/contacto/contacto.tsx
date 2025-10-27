@@ -455,13 +455,19 @@ export default function ContactoScreen() {
             <MapContainer>
               {Platform.select({
                 web: (
-                  <iframe
-                    src="https://www.google.com/maps?q=Calle+Gaming+123&z=15&output=embed"
-                    style={{ width: '100%', height: 200, border: 0 }}
-                    allowFullScreen
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                  />
+                  coordsTienda ? (
+                    <iframe
+                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${coordsTienda.lng-0.01},${coordsTienda.lat-0.01},${coordsTienda.lng+0.01},${coordsTienda.lat+0.01}&layer=mapnik&marker=${coordsTienda.lat},${coordsTienda.lng}`}
+                      style={{ width: '100%', height: 200, border: 0 }}
+                      allowFullScreen
+                      loading="lazy"
+                    />
+                  ) : (
+                    <TouchableOpacity onPress={openLocation} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8f9fa' }}>
+                      <Ionicons name="map-outline" size={48} color="#6c757d" />
+                      <Text style={{ color: '#6c757d', marginTop: 8 }}>Abrir en Maps</Text>
+                    </TouchableOpacity>
+                  )
                 ),
                 default: (
                   coordsTienda ? (
