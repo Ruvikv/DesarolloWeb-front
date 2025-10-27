@@ -28,16 +28,12 @@ apiClient.interceptors.request.use(
   async (config) => {
     try {
       const headers = (config.headers = config.headers || {});
-      const url = (config.url || '').toString();
-      const isGeolocation = url.includes('/geolocalizacion/');
-      const skipAuthHeader = (headers as any)['x-skip-auth'] === '1' || (config as any).skipAuth === true;
-      const skipAuth = skipAuthHeader || isGeolocation;
+      const skipAuth = (headers as any)['x-skip-auth'] === '1' || (config as any).skipAuth === true;
 
       if (skipAuth) {
-        // Para peticiones públicas, usar headers mínimos y marcar skip-auth
+        // Peticiones públicas/minimizadas: no adjuntar Authorization ni Content-Type en GET
         headers['Accept'] = 'application/json';
-        headers['x-skip-auth'] = '1';
-        // Evitar adjuntar Authorization
+        // Si existiera Authorization por error, lo removemos
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { Authorization: _omitAuth, ...rest } = headers as any;
         config.headers = rest;
