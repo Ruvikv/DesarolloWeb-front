@@ -26,8 +26,15 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState(value);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
 
-  // Debounce para evitar demasiadas llamadas a la API
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   useEffect(() => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
@@ -38,20 +45,28 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
       debounceRef.current = setTimeout(async () => {
         try {
           const results = await geolocationService.getAddressSuggestions(inputValue);
-          setSuggestions(results);
-          setShowSuggestions(results.length > 0);
+          if (isMountedRef.current) {
+            setSuggestions(results);
+            setShowSuggestions(results.length > 0);
+          }
         } catch (error) {
           console.warn('Error obteniendo sugerencias:', error);
-          setSuggestions([]);
-          setShowSuggestions(false);
+          if (isMountedRef.current) {
+            setSuggestions([]);
+            setShowSuggestions(false);
+          }
         } finally {
-          setIsLoading(false);
+          if (isMountedRef.current) {
+            setIsLoading(false);
+          }
         }
       }, 300);
     } else {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        setSuggestions([]);
+        setShowSuggestions(false);
+        setIsLoading(false);
+      }
     }
 
     return () => {
@@ -62,17 +77,21 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   }, [inputValue]);
 
   const handleSelectSuggestion = (suggestion: AddressSuggestion) => {
-    setInputValue(suggestion.display_name);
-    onAddressSelect(suggestion.display_name);
-    setShowSuggestions(false);
-    setSuggestions([]);
+    if (isMountedRef.current) {
+      setInputValue(suggestion.display_name);
+      onAddressSelect(suggestion.display_name);
+      setShowSuggestions(false);
+      setSuggestions([]);
+    }
   };
 
   const handleTextChange = (text: string) => {
-    setInputValue(text);
-    if (text.trim().length < 3) {
-      setShowSuggestions(false);
-      setSuggestions([]);
+    if (isMountedRef.current) {
+      setInputValue(text);
+      if (text.trim().length < 3) {
+        setShowSuggestions(false);
+        setSuggestions([]);
+      }
     }
   };
 
