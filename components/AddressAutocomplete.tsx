@@ -10,23 +10,22 @@ interface AddressSuggestion {
 
 interface AddressAutocompleteProps {
   value: string;
-  onChangeText: (text: string) => void;
-  onSelectAddress?: (address: string, coordinates: { lat: number; lng: number }) => void;
+  onAddressSelect: (address: string) => void;
   placeholder?: string;
   style?: any;
 }
 
-export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
+const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   value,
-  onChangeText,
-  onSelectAddress,
+  onAddressSelect,
   placeholder = "Ingresa tu dirección...",
   style
 }) => {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const [inputValue, setInputValue] = useState(value);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Debounce para evitar demasiadas llamadas a la API
   useEffect(() => {
@@ -34,11 +33,11 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
       clearTimeout(debounceRef.current);
     }
 
-    if (value.trim().length >= 3) {
+    if (inputValue.trim().length >= 3) {
       setIsLoading(true);
       debounceRef.current = setTimeout(async () => {
         try {
-          const results = await geolocationService.getAddressSuggestions(value);
+          const results = await geolocationService.getAddressSuggestions(inputValue);
           setSuggestions(results);
           setShowSuggestions(results.length > 0);
         } catch (error) {
@@ -48,7 +47,7 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         } finally {
           setIsLoading(false);
         }
-      }, 300); // 300ms de delay
+      }, 300);
     } else {
       setSuggestions([]);
       setShowSuggestions(false);
@@ -60,23 +59,17 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         clearTimeout(debounceRef.current);
       }
     };
-  }, [value]);
+  }, [inputValue]);
 
   const handleSelectSuggestion = (suggestion: AddressSuggestion) => {
-    onChangeText(suggestion.display_name);
+    setInputValue(suggestion.display_name);
+    onAddressSelect(suggestion.display_name);
     setShowSuggestions(false);
     setSuggestions([]);
-    
-    if (onSelectAddress) {
-      onSelectAddress(suggestion.display_name, {
-        lat: suggestion.lat,
-        lng: suggestion.lng
-      });
-    }
   };
 
   const handleTextChange = (text: string) => {
-    onChangeText(text);
+    setInputValue(text);
     if (text.trim().length < 3) {
       setShowSuggestions(false);
       setSuggestions([]);
@@ -97,7 +90,7 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   return (
     <View style={[styles.container, style]}>
       <TextInput
-        value={value}
+        value={inputValue}
         onChangeText={handleTextChange}
         placeholder={placeholder}
         style={styles.textInput}
@@ -193,3 +186,5 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
+
+export default AddressAutocomplete;
