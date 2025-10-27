@@ -8,7 +8,7 @@ const API_BASE_URL = API_CONFIG.BASE_URL;
 // Crear instancia de axios
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: API_CONFIG.TIMEOUT || 30000,
   // No establecer headers globales que disparen preflight en GET
 });
 

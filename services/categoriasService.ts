@@ -87,7 +87,7 @@ export const categoriasService = {
           'Accept': 'application/json',
         },
         mode: 'cors',
-        timeoutMs: 30000,
+        timeoutMs: API_CONFIG.TIMEOUT,
       });
       
       if (!response.ok) {
@@ -110,7 +110,7 @@ export const categoriasService = {
           'Accept': 'application/json',
         },
         mode: 'cors',
-        timeoutMs: 15000,
+        timeoutMs: API_CONFIG.TIMEOUT,
       });
       
       if (!response.ok) {
