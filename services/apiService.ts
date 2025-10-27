@@ -12,6 +12,21 @@ const apiClient: AxiosInstance = axios.create({
   // No establecer headers globales que disparen preflight en GET
 });
 
+// Fallback simple a Nominatim para geocodificación cuando el backend responde 401 o falla
+async function geocodeWithNominatim(query: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+    const resp = await fetch(url, { headers: { Accept: 'application/json' } });
+    const json = await resp.json();
+    if (Array.isArray(json) && json.length > 0 && json[0]?.lat && json[0]?.lon) {
+      const lat = parseFloat(json[0].lat);
+      const lng = parseFloat(json[0].lon);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+    }
+  } catch (_) {}
+  return null;
+}
+
 // Helper para extraer datos independientemente del formato
 function extractData<T>(response: AxiosResponse<any>): T {
   const body = response.data;
@@ -210,7 +225,13 @@ export const geolocationService = {
       });
       return response.data.data;
     } catch (error) {
-      console.error('Error al obtener coordenadas desde dirección:', error);
+      // Si el backend devuelve 401 u otro error, intentar resolver con Nominatim
+      const fallback = await geocodeWithNominatim(direccion);
+      if (fallback) {
+        console.warn('Usando fallback Nominatim para coordenadas');
+        return fallback;
+      }
+      console.error('Error al obtener coordenadas desde dirección (sin fallback):', error);
       throw error;
     }
   },
