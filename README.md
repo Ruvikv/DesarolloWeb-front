@@ -1,5 +1,32 @@
 # Tienda – Documentación del Frontend
 
+## Índice
+- [Stack y librerías](#stack-y-librerías)
+- [Estructura y decisiones de arquitectura](#estructura-y-decisiones-de-arquitectura)
+- [Navegación (Drawer)](#navegación-drawer)
+- [Servicios (services/)](#servicios-services)
+- [Contextos (contexts/)](#contextos-contexts)
+- [Pantallas](#pantallas)
+- [Framework y galería de estilos](#framework-y-galería-de-estilos)
+- [Cómo ejecutar](#cómo-ejecutar)
+- [Backend objetivo](#backend-objetivo)
+- [Notas y buenas prácticas](#notas-y-buenas-prácticas)
+- [Capturas de pantalla (requerido por la cátedra)](#capturas-de-pantalla-requerido-por-la-cátedra)
+- [Características clave (resumen)](#características-clave-resumen)
+- [Especificaciones técnicas actuales (según package.json)](#especificaciones-técnicas-actuales-según-packagejson)
+- [Arquitectura y decisiones](#arquitectura-y-decisiones)
+- [Funcionalidades detalladas](#funcionalidades-detalladas)
+- [Scanner y cámara](#scanner-y-cámara)
+- [Scripts y entorno de desarrollo](#scripts-y-entorno-de-desarrollo)
+- [Variables de entorno (.env)](#variables-de-entorno-env)
+- [Ventajas del enfoque](#ventajas-del-enfoque)
+- [Roadmap y pendientes](#roadmap-y-pendientes)
+- [Buenas prácticas y recomendaciones](#buenas-prácticas-y-recomendaciones)
+- [Troubleshooting (común)](#troubleshooting-común)
+- [Publicación](#publicación)
+- [Contribución](#contribución)
+- [Preguntas frecuentes (FAQ)](#preguntas-frecuentes-faq)
+
 Este repositorio contiene la aplicación móvil/web construida con Expo + React Native y navegación con Expo Router. Se describen las decisiones de arquitectura, separación por carpetas/servicios, el stack utilizado y el comportamiento de cada pantalla clave.
 
 ## Stack y librerías
@@ -32,7 +59,9 @@ Este repositorio contiene la aplicación móvil/web construida con Expo + React 
   - geolocationService: getCoordinatesFromAddress, getAddressFromCoordinates, calculateShippingCost, calculateDistance, getNearbyStores, updateStoreCoordinates (todas públicas con x-skip-auth cuando corresponde)
 - catalogoService.ts (productService)
   - Instancia axios propia con interceptor que añade token si existe y respeta skipAuth
-  - Normalización de producto y endpoints públicos: getPublicProducts, searchProducts (según backend)
+  - Normalización de producto y endpoints públicos: getPublicProducts, getVisualCatalog, getFeaturedProducts, searchProducts, getProductById
+  - Descargas: Excel (`/catalogo/descargar/excel`) y PDF (`/productos/exportar/pdf`)
+  - Nota: además de sus propios endpoints de `catalogo/*`, utiliza endpoints de `productos/*` para exportaciones y fallback de destacados
 - categoriasService.ts
   - Instancia axios con mismo patrón de interceptor
   - Métodos: obtenerTodas, obtenerPorId (públicos)
@@ -40,6 +69,118 @@ Este repositorio contiene la aplicación móvil/web construida con Expo + React 
   - login/logout/getToken/isAuthenticated; limpia token en 401
 - storageUtils.ts
   - safeAsyncStorage: wrapper SSR-safe de AsyncStorage (getItem/setItem/removeItem con try/catch y early return en SSR)
+
+### Endpoints por servicio
+- apiService/geolocationService
+  - `GET /geolocalizacion/coordenadas` obtener coordenadas por dirección
+  - `GET /geolocalizacion/direccion` obtener dirección por coordenadas
+  - `POST /geolocalizacion/costo-envio` calcular costo de envío
+  - `GET /geolocalizacion/distancia` calcular distancia entre dos puntos
+  - `GET /geolocalizacion/tiendas-cercanas` listar tiendas cercanas
+  - `POST /geolocalizacion/actualizar-coordenadas` actualizar coordenadas de tienda
+
+- catalogoService (público + admin)
+  - Público: `GET /catalogo/publico`, `GET /catalogo/visual`, `GET /catalogo/destacados`, `GET /catalogo/buscar?q=...`, `GET /catalogo/producto/:id`
+  - Descargas: `GET /catalogo/descargar/excel`, `GET /productos/exportar/pdf`
+  - Admin catálogo: `PATCH /catalogo/producto/:id` (nombre/descripcion), `PUT /catalogo/producto/:id/imagen-principal`, `POST /catalogo/producto/:id/imagenes`, `DELETE /catalogo/producto/:id/imagen-principal`, `DELETE /catalogo/producto/:id/imagen`, `PATCH /catalogo/producto/:id/destacado` con fallback `PATCH /productos/:id/destacado`
+
+- productosService (admin)
+  - `GET /productos?conGanancia=true` listar activos con ganancia
+  - `GET /productos/inactivos` listar inactivos
+  - `PUT /productos/:id` actualizar producto (multipart o JSON)
+  - `PATCH /productos/:id/porcentaje-ganancia` actualizar porcentaje
+  - `POST /precios/generar-consumidor-final` generar precios
+  - `POST /productos/rapido` creación rápida (nombre + precio_costo)
+
+- preciosService
+  - `GET /precios/ajuste-precio-costo` obtener ajuste global
+  - `PATCH /precios/ajuste-precio-costo` actualizar ajuste
+  - `POST /precios/generar-consumidor-final` generar precios consumidor final
+  - `POST /precios/generar-mayoristas` generar precios mayoristas
+  - `GET /precios/mayoristas` obtener precios mayoristas
+  - `GET /productos?conGanancia=true` productos con ganancia
+  - `GET /ventas/mayoristas/precio-sugerido/:productoId` precio mayorista sugerido
+
+- categoriasService
+  - `GET /categorias` listar categorías activas
+  - `GET /categorias/:id` obtener categoría por ID
+
+- authService
+  - `POST /auth/login` login
+  - `GET /auth/profile` perfil
+  - `POST /auth/register/admin-con-codigo` crear perfil admin
+  - `POST /auth/register/revendedor` crear perfil revendedor
+
+- pedidoService
+  - `POST /usuarios/pedido-consumidor` registrar pedido consumidor (normaliza items y hace wake-up del backend)
+
+- barcodeService
+  - OpenFoodFacts: `GET https://world.openfoodfacts.org/api/v0/product/:code.json` y `GET /api/v2/product/:code`
+  - UPCItemDB trial: `GET https://api.upcitemdb.com/prod/trial/lookup?upc=:code`
+
+- prewarmService
+  - Wake-up robusto del backend con: `GET /catalogo/publico`, `GET /categorias`, `GET /catalogo/destacados`
+
+### Ejemplos de uso
+- Búsqueda pública en catálogo
+  ```ts
+  import catalogo from './services/catalogoService';
+  const productos = await catalogo.searchProducts('yerba');
+  ```
+- Descargar catálogo (Excel/PDF)
+  ```ts
+  await catalogo.downloadCatalogExcel();
+  await catalogo.downloadCatalogPDF(); // usa endpoint de productos
+  ```
+- Actualizar producto (admin, multipart)
+  ```ts
+  import { productosService } from './services/productosService';
+  await productosService.actualizarProductoCatalogo('123', { nombre: 'Nuevo', precio_costo: 1500 });
+  ```
+- Ajuste global de precios
+  ```ts
+  import { preciosService } from './services/preciosService';
+  await preciosService.actualizarAjustePrecioCosto(45);
+  ```
+- Geolocalización: costo de envío
+  ```ts
+  import { geolocationService } from './services/apiService';
+  const { costo } = await geolocationService.calculateShippingCost('Av. Siempreviva 742', 1000);
+  ```
+- Login y perfil
+  ```ts
+  import { authService } from './services/authService';
+  const res = await authService.login('user@mail.com', 'password');
+  const profile = await authService.getProfile();
+  ```
+
+### Tabla de relación Catálogo ↔ Productos
+
+Esta tabla mapea los métodos de `catalogoService` con sus endpoints y, cuando corresponde, el endpoint de `productos` utilizado.
+
+Público
+
+| Método | Endpoint `catalogo` | Endpoint `productos` (si aplica) | Descripción |
+|--------|----------------------|----------------------------------|-------------|
+| `getPublicProducts()` | `GET /catalogo/publico` | — | Lista pública para home y destacados. |
+| `getVisualCatalog()` | `GET /catalogo/visual` | — | Grilla del catálogo visual. |
+| `getFeaturedProducts()` | `GET /catalogo/destacados` | — | Lista de productos destacados públicos. |
+| `searchProducts(query)` | `GET /catalogo/buscar?q=...` | — | Búsqueda por texto. |
+| `getProductById(id)` | `GET /catalogo/producto/:id` | — | Detalle de producto. |
+| `downloadCatalogExcel()` | `GET /catalogo/descargar/excel` | — | Descarga Excel (requiere auth si el backend lo exige). |
+| `downloadCatalogPDF()` | — | `GET /productos/exportar/pdf` | Exporta PDF del catálogo desde `productos`. |
+
+Admin
+
+| Método | Endpoint `catalogo` | Endpoint `productos` (si aplica) | Descripción |
+|--------|----------------------|----------------------------------|-------------|
+| `getCatalogProductsAdmin()` | `GET /catalogo/productos` | — | Listado de productos para administración del catálogo. |
+| `actualizarDescripcionCatalogo(id, payload)` | `PATCH /catalogo/producto/:id` | — | Actualiza nombre/descripcion. |
+| `toggleDestacadoAdmin(id, val)` | `PATCH /catalogo/producto/:id/destacado` | Fallback: `PATCH /productos/:id/destacado` o `PATCH /catalogo/producto/:id` | Alterna el estado de destacado. |
+| `actualizarImagenPrincipalAdmin(id, file)` | `PUT /catalogo/producto/:id/imagen-principal` | — | Sube/actualiza imagen principal. |
+| `agregarImagenesGaleriaAdmin(id, files)` | `POST /catalogo/producto/:id/imagenes` | — | Agrega imágenes a la galería. |
+| `eliminarImagenPrincipalAdmin(id)` | `DELETE /catalogo/producto/:id/imagen-principal` | — | Elimina imagen principal. |
+| `eliminarImagenGaleriaAdmin(id, url)` | `DELETE /catalogo/producto/:id/imagen` | — | Elimina una imagen de la galería. |
 
 ## Contextos (contexts/)
 - AuthContext.tsx
@@ -159,4 +300,123 @@ Coloca tus imágenes en assets/images/capturas/ con los siguientes nombres y se 
 
 ![Carrito](assets/images/capturas/carrito.png)
 
-> 
+>
+
+## Características clave (resumen)
+- Inicio público con acceso rápido a catálogo, destacados y ofertas.
+- Catálogo Visual con búsqueda, filtros por categoría y cards con acción al carrito.
+- Lista de Precios con render compacto móvil (sin scroll horizontal) y acciones claras.
+- Carrito con gestión de cantidades, totales y finalización de compra.
+- Contacto con cálculo de envío, tiendas cercanas y apertura de mapa.
+- Exploración de marca con CTA y enlaces directos (tel, mailto, WhatsApp).
+- Autenticación y rutas protegidas (login/registro y `ProtectedRoute`).
+- Soporte Web desde el mismo código (`react-native-web` + Metro bundler).
+- Dev server estable en `http://localhost:8081` y proxy de desarrollo para APIs.
+
+## Especificaciones técnicas actuales (según package.json)
+- Expo `~51.0.0`, React Native `0.74.5`, React `18.2.0`.
+- Expo Router `~3.5.24` (rutas file-based en `app/`).
+- TypeScript `~5.8.3`, Babel `@babel/core ^7.25.2`.
+- UI/UX: `styled-components ^6.1.0`, `@expo/vector-icons ^14.0.3`.
+- Navegación y experiencia: `react-native-gesture-handler ~2.16.1`, `react-native-reanimated ~3.10.1`, `react-native-screens 3.31.1`, `react-native-safe-area-context 4.10.5`.
+- Web: `react-native-web ~0.19.10`, bundler Metro.
+- Datos y almacenamiento: `axios ^1.7.9`, `@react-native-async-storage/async-storage 1.23.1`.
+- Mapas y ubicación: `react-native-maps 1.14.0`, `expo-location ~17.0.1`.
+- Cámara: `expo-camera ~15.0.14`.
+- Utilitarios dev: `express ^4.19.2`, `http-proxy-middleware ^3.0.0`.
+
+## Arquitectura y decisiones
+- Ruteo por archivos en `app/` con `expo-router` y layout global en `_layout.tsx`.
+- Contextos globales: `AuthContext` y `CartContext` para autenticación y carrito.
+- Servicios (`services/`) por dominio: `apiService`, `productosService`, `preciosService`, `authService`, `categoriasService`, `prewarmService`.
+- Interceptores por servicio: inyección de token Bearer, manejo de `401`, flag público (`x-skip-auth`) y reducción de preflight en GET.
+- Almacenamiento seguro: wrapper SSR‑safe sobre AsyncStorage (`storageUtils.ts`).
+- Componentes de infraestructura: `ProtectedRoute`, `AddressAutocomplete`.
+
+## Funcionalidades detalladas
+- Inicio (`app/home/inicio.tsx`): saludo dinámico, acciones rápidas, buscador, grid de categorías, carrusel de destacados, métricas.
+- Catálogo Visual (`app/catalogo/visual.tsx`): búsqueda, chips de categorías, grid de productos con CTA al carrito, estados y paginación simple.
+- Explorar (`app/catalogo/explore.tsx`): información de marca y servicios, CTA hacia catálogo/contacto y atajos de linking.
+- Contacto (`app/contacto/contacto.tsx`): costo de envío, tiendas cercanas por dirección/ubicación, mapa y permisos.
+- Carrito (`app/carrito.tsx`): gestión completa de ítems y confirmación de pedido.
+- Precios (`app/precios/lista.tsx`): lista optimizada para móvil, tarjetas compactas, acciones y edición rápida.
+- Auth (`app/auth/login.tsx`, `registerAdmin.tsx`, `registerRevendedor.tsx`): flujo de autenticación y registro con persistencia de token.
+
+## Scanner y cámara
+- Móvil: lectura con `expo-camera` y UX de permisos.
+- Web: uso de `BarcodeDetector` nativo cuando disponible y entrada manual como fallback.
+- Nota: `@zxing/browser` está presente en dependencias; para evitar errores de bundling se usa preferencia por nativo o entrada manual.
+
+## Scripts y entorno de desarrollo
+- `npm run start` o `npx expo start`: arranca el bundler y servidores.
+- `npm run web` o `expo start --web`: modo web con Metro.
+- `npm run web:8081`: asegura el puerto `8081` estable (script `scripts/ensure-8081.js`).
+- `npm run proxy`: inicia un proxy Express para facilitar llamadas a backend en desarrollo.
+- `scripts/reset-project.js`: utilitario para limpiar cachés en caso de problemas.
+
+## Variables de entorno (`.env`)
+- Mantener claves y URLs fuera del repo (no versionar `.env`).
+- Variables típicas: `API_BASE_URL`, `MAPS_API_KEY`, flags de entorno.
+- Consultar `config/api.js` y servicios para rutas base y consumo.
+
+## Ventajas del enfoque
+- Un solo código para Android/iOS/Web, reduciendo tiempos y costos.
+- Arquitectura modular por dominios con servicios y contextos reutilizables.
+- Estilos declarativos con `styled-components` que facilitan el temado.
+- Experiencia móvil optimizada (gestos, reanimated, safe areas).
+- Infraestructura de dev estable en `localhost:8081` con proxy y scripts.
+
+## Roadmap y pendientes
+- Accesibilidad: roles, labels y navegación por teclado en web.
+- Performance: virtualización/paginación para listas grandes en Catálogo/Precios.
+- Experiencia de cámara en web: evaluar librería liviana o mantener `BarcodeDetector` + mejora de fallback.
+- Mejora de UI: botones de acción más grandes en tarjetas móviles y consistencia visual.
+- Estado y datos: indicadores de carga y skeletons en vistas con fetch.
+- Testing: unitarios (servicios, reducers) e integración básica de pantallas.
+- CI/CD: pipeline para QA y builds automáticos (Android/iOS/Web).
+- Offline: cache de catálogo y precios, manejo de reconexión.
+- Seguridad: sanitización adicional de entrada, logs y reporte de errores.
+- Internacionalización: soporte multi-idioma.
+
+## Buenas prácticas y recomendaciones
+- No exponer secretos; manejar tokens vía `storageUtils` y servicios.
+- Manejo robusto de errores en servicios con mensajes amigables.
+- Evitar cambios de API sin versionar `swagger.json` y `config/api.js`.
+- Mantener consistencia de diseño; documentar decisiones en PRs.
+
+## Troubleshooting (común)
+- Puerto ocupado (`8081`): liberar proceso o usar `npm run web:8081`.
+- Bundling web con ZXing: preferir `BarcodeDetector`; si falla, usar entrada manual.
+- Caches corruptas: ejecutar `scripts/reset-project.js` y reinstalar dependencias.
+- Permisos de ubicación: revisar configuración y `expo-location` en Android/iOS.
+
+## Publicación
+- Android: `expo run:android` para generar build local y pruebas en emulador/dispositivo.
+- iOS: `expo run:ios` (requiere macOS y Xcode).
+- Web: `expo start --web` y despliegue estático (`expo.web.output: static`).
+
+## Contribución
+- Estándar de código: TypeScript, ESLint y convenciones de carpetas.
+- PRs con descripción clara: contexto, alcance y capturas.
+- Issues: reproducibilidad, pasos y entorno.
+
+## Preguntas frecuentes (FAQ)
+- ¿Por qué `localhost:8081`? Mantiene consistencia y evita conflictos con otros procesos. Si el puerto está ocupado, usa `npm run web:8081` o libera el proceso activo.
+- ¿Qué hago si el bundler web falla por `@zxing/browser`? Preferir `BarcodeDetector` nativo; si no está disponible, usar entrada manual. En caso de error, limpiar cachés con `scripts/reset-project.js`.
+- ¿Dónde configuro el `baseURL`? Ver `config/api.js` y servicios en `services/`; las variables sensibles van en `.env` (no versionado).
+- ¿Cómo pruebo cámara? En móvil con `expo-camera` y Expo Go; en web, probar en Chrome con `BarcodeDetector` o usar el campo manual.
+- ¿Cómo agrego una pantalla nueva? Crear archivo en `app/` (por ejemplo `app/nueva.tsx`), exportar el componente y enlazar desde el layout o navegación.
+- ¿Cómo actualizo versiones sin romper? Revisar compatibilidad en Expo y RN, actualizar gradualmente (`expo doctor`, release notes), y probar en web + móvil.
+- ¿Cómo reporto bugs y aportar? Abrir issue con pasos reproducibles y entorno; para PRs, incluir descripción, alcance y capturas.
+ - ¿Qué servicios existen y qué hace cada uno?
+   - `apiService.ts`: cliente Axios genérico con `get`, `post`, `put`, `patch`, `delete`, interceptores para token y manejo de errores. Incluye `geolocationService` con: `getCoordinatesFromAddress`, `getAddressFromCoordinates`, `calculateShippingCost`, `calculateDistance`, `getNearbyStores`, `updateStoreCoordinates`.
+   - `authService.ts`: autenticación y perfiles. Métodos: `login(email, password)`, `getProfile()`, `createProfileAdmin(...)`, `createProfileRevendedor(...)`.
+   - `productosService.ts` (admin): catálogo y precios. Métodos: `listarActivos()`, `listarInactivos()`, `actualizarProductoCatalogo(id, payload)` (multipart con fallback JSON), `actualizarPorcentaje(id, porcentaje)`, `generarPreciosConsumidorFinal()`, `crearRapido({ nombre, precio_costo })`.
+   - `preciosService.ts`: ajustes y generación de precios. Métodos: `getAjustePrecioCosto()`, `actualizarAjustePrecioCosto(valor)`, `generarPreciosConsumidorFinal()`, `generarPreciosMayoristas()`, `obtenerPreciosMayoristas()`, `obtenerProductosConGanancia()`, `getPrecioMayoristaSugerido(productoId)`.
+   - `categoriasService.ts`: categorías activas y detalle. Métodos: `obtenerTodas()`, `obtenerPorId(id)`.
+   - `pedidoService.ts`: registro de pedidos de consumidores. Método: `registrarPedidoConsumidor(payload)` (normaliza items y realiza wake-up del backend antes del POST).
+   - `barcodeService.ts`: búsqueda global por código de barras. Método: `buscarProductoGlobal(code)` (consulta OpenFoodFacts y UPCItemDB trial).
+   - `prewarmService.ts`: pre-calentamiento del backend Render. Métodos: `checkBackendHealth()`, `warmupBackend()`, `startWarmup()`, `getBackendStatus()` (exponential backoff y verificación periódica).
+   - `storageUtils.ts`: wrapper SSR-safe para almacenamiento. Métodos: `safeAsyncStorage.getItem`, `setItem`, `removeItem`.
+   
+   Ver sección [Servicios (services/)](#servicios-services) para detalles y ejemplos.
