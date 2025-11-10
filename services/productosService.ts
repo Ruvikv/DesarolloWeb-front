@@ -131,6 +131,7 @@ export const productosService = {
       sku?: string;
       unidad_id?: number | null;
       activo?: boolean;
+      imagenes?: Array<any>; // File[] en web o { uri, name, type } en nativo
     }
   ): Promise<any> => {
     const form = new FormData();
@@ -142,6 +143,17 @@ export const productosService = {
     if (payload.sku !== undefined) form.append('sku', String(payload.sku));
     if (payload.unidad_id !== undefined && payload.unidad_id !== null) form.append('unidad_id', String(payload.unidad_id));
     if (payload.activo !== undefined) form.append('activo', String(payload.activo));
+    // Adjuntar imágenes si están presentes (máximo 5)
+    try {
+      const imgs = Array.isArray(payload.imagenes) ? payload.imagenes.slice(0, 5) : [];
+      for (const img of imgs) {
+        // Soportar File/Blob en web o { uri, name, type } en nativo
+        const name = (img?.name as string) || 'imagen.jpg';
+        const type = (img?.type as string) || 'image/jpeg';
+        const value: any = img;
+        form.append('imagenes', value, name);
+      }
+    } catch {}
 
     try {
       console.log('[productosService] PUT multipart /productos/' + id, { payload });
@@ -171,6 +183,19 @@ export const productosService = {
 
   generarPreciosConsumidorFinal: async (): Promise<{ ok: boolean }> => {
     const { data } = await productosClient.post('/precios/generar-consumidor-final', {});
+    return data;
+  },
+
+  crearRapido: async (payload: { nombre: string; precio_costo: number }): Promise<any> => {
+    // Ajustarse al contrato mínimo del backend: solo nombre y precio_costo
+    const body = { nombre: String(payload.nombre || ''), precio_costo: Number(payload.precio_costo || 0) };
+    if (!body.nombre || !Number.isFinite(body.precio_costo)) {
+      throw new Error('Payload inválido: nombre y precio_costo son requeridos');
+    }
+    const { data } = await productosClient.post('/productos/rapido', body, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 30000,
+    });
     return data;
   },
 };

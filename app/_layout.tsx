@@ -103,14 +103,12 @@ function DrawerLayout() {
       <Drawer.Screen name="catalogo/[id]" options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="contacto/contacto" options={{ title: "Contacto" }} />
       <Drawer.Screen name="auth/login" options={{ title: "Iniciar sesión" }} />
+      <Drawer.Screen name="precios/lista" options={{ title: "Lista de Precios" }} />
       {/* Carrito visible como pantalla, acceso principal vía header; ocultamos del Drawer si prefieres */}
       <Drawer.Screen name="carrito" options={{ title: "Carrito", drawerItemStyle: { display: 'none' } }} />
       {/* Pantalla de éxito de pedido (navegación interna, oculta del Drawer) */}
       <Drawer.Screen name="pedido/exito" options={{ drawerItemStyle: { display: 'none' } }} />
-      {/* Pantallas de administración ocultas del Drawer público */}
-      <Drawer.Screen name="compras" options={{ drawerItemStyle: { display: 'none' } }} />
-      <Drawer.Screen name="revendedores" options={{ drawerItemStyle: { display: 'none' } }} />
-      <Drawer.Screen name="estadisticas" options={{ drawerItemStyle: { display: 'none' } }} />
+      {/* Rutas inexistentes eliminadas para evitar warnings de expo-router */}
     </Drawer>
   );
 }
