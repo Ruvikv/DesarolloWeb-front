@@ -1,4 +1,5 @@
 import { API_CONFIG } from '../config/api.js';
+import { fetchWithTimeout } from './httpUtils';
 
 /**
  * Servicio robusto para pre-calentar el backend de Render
@@ -7,30 +8,29 @@ import { API_CONFIG } from '../config/api.js';
 export const prewarmService = {
   isBackendHealthy: false as boolean,
   retryCount: 0 as number,
-  maxRetries: 10 as number,
-  baseDelay: 1000 as number, // 1 segundo inicial
+  maxRetries: 6 as number,
+  baseDelay: 2500 as number, // 2.5s inicial para reducir spam de intentos
   
   /**
    * Verifica si el backend está disponible usando un health check
    */
   async checkBackendHealth(): Promise<boolean> {
     const baseUrl = API_CONFIG.BASE_URL;
-    const timeout = Math.min((API_CONFIG.TIMEOUT ?? 30000), 60000);
+    const timeout = Math.min((API_CONFIG.TIMEOUT ?? 30000), 30000);
     
     try {
       // console.log('🏥 Verificando salud del backend...');
       
       // Intentar con un endpoint simple usando GET y CORS (más compatible)
-      const response = await fetch(`${baseUrl}/catalogo/publico`, {
+      const response = await fetchWithTimeout(`${baseUrl}/catalogo/publico`, {
         method: 'GET',
         mode: 'cors',
-        headers: {
-          'Accept': 'application/json'
-        },
+        headers: { 'Accept': 'application/json' },
         cache: 'no-cache',
-        signal: AbortSignal.timeout(timeout)
+        timeoutMs: timeout,
       });
-      
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
       this.isBackendHealthy = true;
       // console.log('✅ Backend está disponible');
       return true;
@@ -72,30 +72,29 @@ export const prewarmService = {
     
     // console.log(`🔄 Intento ${this.retryCount + 1}/${this.maxRetries} de despertar backend...`);
     
-    // Usar múltiples estrategias de ping
-    const timeout = Math.min((API_CONFIG.TIMEOUT ?? 30000), 60000);
+    // Usar múltiples estrategias de ping con timeout moderado
+    const timeout = Math.min((API_CONFIG.TIMEOUT ?? 30000), 30000);
     const promises = endpoints.map(async (endpoint) => {
       try {
         // console.log(`🌡️ Despertando servidor con ${endpoint}...`);
         
-        // Estrategia 1: no-cors para despertar
-        await fetch(`${baseUrl}${endpoint}`, {
+        // Estrategia 1: no-cors para despertar (resultado opaco, sólo despertar)
+        await fetchWithTimeout(`${baseUrl}${endpoint}`, {
           method: 'GET',
           mode: 'no-cors',
           cache: 'no-cache',
-          signal: AbortSignal.timeout(timeout)
+          timeoutMs: timeout,
         });
-        
+
         // Estrategia 2: cors para verificar respuesta real
-        await fetch(`${baseUrl}${endpoint}`, {
+        const res = await fetchWithTimeout(`${baseUrl}${endpoint}`, {
           method: 'GET', 
           mode: 'cors',
-          headers: {
-            'Accept': 'application/json'
-          },
+          headers: { 'Accept': 'application/json' },
           cache: 'no-cache',
-          signal: AbortSignal.timeout(timeout)
+          timeoutMs: timeout,
         });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         
         // console.log(`✅ Ping exitoso a ${endpoint}`);
         return true;

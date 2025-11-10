@@ -14,7 +14,7 @@ export const checkNetworkConnection = async () => {
 };
 
 // Manejar errores de red
-export const handleNetworkError = (error) => {
+export const handleNetworkError = (error: any): string => {
   if (error.code === 'ECONNREFUSED' || error.code === 'NETWORK_ERROR') {
     return 'No se pudo conectar al servidor. Verifica tu conexión a internet.';
   }

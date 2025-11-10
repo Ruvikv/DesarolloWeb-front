@@ -68,8 +68,8 @@ const Dashboard = () => {
 
   const cards: CardProps[] = [
     { title: 'Productos', subtitle: 'Gestiona tu inventario', icon: 'cube-outline', onPress: () => router.push('/productos'), gradient: ['#42e695', '#3bb2b8'] as const, actionLabel: 'Gestionar' },
-    { title: 'Lista de Precios', subtitle: 'Actualiza precios', icon: 'pricetag-outline', gradient: ['#7f7fd5', '#86a8e7'] as const, actionLabel: 'Ver lista' },
-    { title: 'Catálogo Visual', subtitle: 'Imágenes y detalles', icon: 'images-outline', onPress: () => router.push('/catalogo/visual'), gradient: ['#ff6a00', '#ee0979'] as const, actionLabel: 'Ver' },
+    { title: 'Lista de Precios', subtitle: 'Actualiza precios', icon: 'pricetag-outline', onPress: () => router.push('/precios/lista'), gradient: ['#7f7fd5', '#86a8e7'] as const, actionLabel: 'Ver lista' },
+    { title: 'Catálogo Visual', subtitle: 'Imágenes y detalles', icon: 'images-outline', onPress: () => router.push('/catalogo/visual-admin'), gradient: ['#ff6a00', '#ee0979'] as const, actionLabel: 'Gestionar' },
     { title: 'Pedidos', subtitle: 'Órdenes de clientes', icon: 'clipboard-outline', gradient: ['#ff512f', '#dd2476'] as const, actionLabel: 'Gestionar' },
     { title: 'Ventas', subtitle: 'Ventas manuales', icon: 'receipt-outline', gradient: ['#11998e', '#38ef7d'] as const, actionLabel: 'Registrar' },
     { title: 'Configuración', subtitle: 'Preferencias del sistema', icon: 'settings-outline', gradient: ['#636363', '#a2ab58'] as const, actionLabel: 'Configurar' },

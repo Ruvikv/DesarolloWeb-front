@@ -181,6 +181,19 @@ export const apiService = {
     }
   },
 
+  patch: async <T>(url: string, data: any, config: any = {}): Promise<T> => {
+    try {
+      const response = await apiClient.patch(url, data, {
+        headers: { 'Content-Type': 'application/json', ...(config.headers || {}) },
+        ...config,
+      });
+      return extractData<T>(response);
+    } catch (error) {
+      console.error(`Error en PATCH ${url}:`, error);
+      throw error;
+    }
+  },
+
   put: async <T>(url: string, data: any, config: any = {}): Promise<T> => {
     try {
       const response = await apiClient.put(url, data, {

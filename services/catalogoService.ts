@@ -361,3 +361,147 @@ export async function actualizarDescripcionCatalogo(
     throw error;
   }
 }
+
+// ---------------- Admin catálogo visual ----------------
+export interface ProductoCatalogoAdmin {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  categoria: string;
+  imagen_principal: string | null;
+  imagenes: string[];
+  stock: number;
+  precio_final: number | null;
+  destacado?: boolean;
+}
+
+export async function getCatalogProductsAdmin(): Promise<ProductoCatalogoAdmin[]> {
+  try {
+    const res = await catalogoClient.get('/catalogo/productos', {
+      headers: { Accept: 'application/json' },
+    });
+    const raw = res.data;
+    const arr: any[] = Array.isArray(raw) ? raw : [];
+    return arr.map((p: any) => {
+      const categoria = typeof p.categoria === 'string' ? p.categoria : (p?.categoria?.nombre || '');
+      return {
+        id: p.id,
+        nombre: p.nombre || p.titulo || '',
+        descripcion: p.descripcion || p.descripcion_corta || '',
+        categoria,
+        imagen_principal: p.imagen_principal ?? p.imagen ?? null,
+        imagenes: Array.isArray(p.imagenes) ? p.imagenes : [],
+        stock: typeof p.stock === 'number' ? p.stock : (p.stock_total ?? 0),
+        precio_final: p.precio_final ?? p.precio ?? null,
+        destacado: Boolean(p.destacado ?? p.is_featured ?? false),
+      } as ProductoCatalogoAdmin;
+    });
+  } catch (error) {
+    console.error('[catalogoService] Error obteniendo productos de catálogo admin:', error);
+    return [];
+  }
+}
+
+export async function actualizarImagenPrincipalAdmin(id: string, file: File | Blob): Promise<any> {
+  try {
+    const tok = await safeAsyncStorage.getItem('authToken');
+    const formData = new FormData();
+    formData.append('imagen', file);
+    const headers: Record<string, string> = {};
+    if (tok) headers.Authorization = `Bearer ${tok}`;
+    const res = await catalogoClient.put(`/catalogo/producto/${id}/imagen-principal`, formData, { headers });
+    return res.data;
+  } catch (error) {
+    console.error('[catalogoService] Error actualizando imagen principal:', error);
+    throw error;
+  }
+}
+
+export async function agregarImagenesGaleriaAdmin(
+  id: string,
+  files: FileList | (File | Blob)[]
+): Promise<any> {
+  try {
+    const tok = await safeAsyncStorage.getItem('authToken');
+    const formData = new FormData();
+    let list: (File | Blob)[] = [];
+    if (Array.isArray(files)) {
+      list = files as (File | Blob)[];
+    } else {
+      const fl = files as FileList;
+      for (let i = 0; i < fl.length; i++) {
+        const item = fl.item(i);
+        if (item) list.push(item);
+      }
+    }
+    for (const f of list) formData.append('imagenes', f);
+    const headers: Record<string, string> = {};
+    if (tok) headers.Authorization = `Bearer ${tok}`;
+    const res = await catalogoClient.post(`/catalogo/producto/${id}/imagenes`, formData, { headers });
+    return res.data;
+  } catch (error) {
+    console.error('[catalogoService] Error agregando imágenes a galería:', error);
+    throw error;
+  }
+}
+
+export async function eliminarImagenPrincipalAdmin(id: string): Promise<any> {
+  try {
+    const tok = await safeAsyncStorage.getItem('authToken');
+    const headers: Record<string, string> = {};
+    if (tok) headers.Authorization = `Bearer ${tok}`;
+    const res = await catalogoClient.delete(`/catalogo/producto/${id}/imagen-principal`, { headers });
+    return res.data;
+  } catch (error) {
+    console.error('[catalogoService] Error eliminando imagen principal:', error);
+    throw error;
+  }
+}
+
+export async function eliminarImagenGaleriaAdmin(id: string, imagenUrl: string): Promise<any> {
+  try {
+    const tok = await safeAsyncStorage.getItem('authToken');
+    const headers: Record<string, string> = {};
+    if (tok) headers.Authorization = `Bearer ${tok}`;
+    const res = await catalogoClient.delete(`/catalogo/producto/${id}/imagen`, { data: { imagen_url: imagenUrl }, headers });
+    return res.data;
+  } catch (error) {
+    console.error('[catalogoService] Error eliminando imagen de galería:', error);
+    throw error;
+  }
+}
+
+export async function toggleDestacadoAdmin(id: string, destacadoNuevo: boolean): Promise<any> {
+  try {
+    const tok = await safeAsyncStorage.getItem('authToken');
+    const headers: Record<string, string> = {};
+    if (tok) headers.Authorization = `Bearer ${tok}`;
+
+    // Intento principal (si existe): /catalogo/producto/{id}/destacado
+    try {
+      const res = await catalogoClient.patch(`/catalogo/producto/${id}/destacado`, { destacado: destacadoNuevo }, { headers });
+      return res.data;
+    } catch (e: any) {
+      const status = e?.response?.status;
+      // Fallback 1: /productos/{id}/destacado
+      if (status === 404 || status === 405) {
+        try {
+          const res2 = await catalogoClient.patch(`/productos/${id}/destacado`, { destacado: destacadoNuevo }, { headers });
+          return res2.data;
+        } catch (e2: any) {
+          const status2 = e2?.response?.status;
+          // Fallback 2: PATCH general del catálogo con campo destacado
+          if (status2 === 404 || status2 === 405) {
+            const res3 = await catalogoClient.patch(`/catalogo/producto/${id}`, { destacado: destacadoNuevo }, { headers });
+            return res3.data;
+          }
+          throw e2;
+        }
+      }
+      throw e;
+    }
+  } catch (error) {
+    console.error('[catalogoService] Error alternando destacado:', error);
+    throw error;
+  }
+}
