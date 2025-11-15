@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import React, { useEffect } from "react";
-import { TouchableOpacity, View, Text } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { CartProvider, useCart } from "../contexts/CartContext";
@@ -11,8 +11,8 @@ import { prewarmService } from "../services/prewarmService";
 function BackButton() {
   const router = useRouter();
   return (
-    <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 10 }}>
-      <Ionicons name="arrow-back" size={24} color="#000" />
+    <TouchableOpacity onPress={() => router.back()}>
+      {/* <Ionicons name="arrow-back" size={24} color="#000" /> */}
     </TouchableOpacity>
   );
 }
@@ -98,6 +98,7 @@ function DrawerLayout() {
         }}
       />
       <Drawer.Screen name="catalogo/visual" options={{ title: "Catálogo Visual" }} />
+      <Drawer.Screen name="catalogo/visual-admin" options={{ title: "CVAdmin" }} />
       <Drawer.Screen name="catalogo/explore" options={{ title: "Explorar" }} />
       {/* Detalle de producto oculto del Drawer */}
       <Drawer.Screen name="catalogo/[id]" options={{ drawerItemStyle: { display: 'none' } }} />
