@@ -1,14 +1,14 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, FlatList, Alert, TouchableOpacity, ScrollView, Image, TextInput, Modal, Platform, useWindowDimensions } from 'react-native';
-import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
-import { useRouter } from 'expo-router';
-import { apiService } from '../../services/apiService';
-import { preciosService, AjusteGlobal } from '../../services/preciosService';
 import { Ionicons } from '@expo/vector-icons';
-import { barcodeService, BarcodeProduct } from '../../services/barcodeService';
-import { productosService } from '../../services/productosService';
-import { categoriasService, Categoria as CategoriaItem } from '../../services/categoriasService';
+import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-camera';
+import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Image, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { API_CONFIG } from '../../config/api.js';
+import { apiService } from '../../services/apiService';
+import { BarcodeProduct, barcodeService } from '../../services/barcodeService';
+import { Categoria as CategoriaItem, categoriasService } from '../../services/categoriasService';
+import { AjusteGlobal, preciosService } from '../../services/preciosService';
+import { productosService } from '../../services/productosService';
 
 type Ajuste = { valor: number } | null;
 type ProductoCF = any; // estructura flexible: usamos campos comunes
@@ -16,7 +16,7 @@ type PrecioMayorista = any; // estructura flexible
 
 export default function ListaPreciosScreen() {
   const { width } = useWindowDimensions();
-  const isMobile = (Platform.OS !== 'web') || width < 640;
+  const isMobile = width < 640 || Platform.OS !== 'web';
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [ajuste, setAjuste] = useState<AjusteGlobal>(null);
@@ -438,17 +438,16 @@ export default function ListaPreciosScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Lista de Precios</Text>
         <View style={styles.toolbar}>
-          <TouchableOpacity style={[styles.refresh, styles.scanBtn, Platform.OS !== 'web' && styles.scanBtnMobile]} onPress={() => setScannerVisible(true)}>
+          <TouchableOpacity style={[styles.refresh, styles.scanBtn, isMobile && styles.scanBtnMobile]} onPress={() => setScannerVisible(true)}>
             <Ionicons name="barcode-outline" size={18} color="#fff" />
-            {Platform.OS === 'web' ? (
-              <Text style={[styles.refreshText, { marginLeft: 6 }]}>Lector de código de barras</Text>
-            ) : null}
+            {!isMobile && (
+              <Text style={[styles.refreshText, { marginLeft: 6 }]}>Lector</Text>
+            )}
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.refresh, styles.refreshBtn, Platform.OS !== 'web' && styles.scanBtnMobile]} onPress={cargarDatos} disabled={loading}>
-            {Platform.OS === 'web' ? (
-              <Text style={styles.refreshText}>{loading ? 'Cargando…' : 'Refrescar'}</Text>
-            ) : (
-              <Ionicons name="refresh-outline" size={18} color="#fff" />
+          <TouchableOpacity style={[styles.refresh, styles.refreshBtn, isMobile && styles.scanBtnMobile]} onPress={cargarDatos} disabled={loading}>
+            <Ionicons name="refresh-outline" size={18} color="#fff" />
+            {!isMobile && (
+              <Text style={[styles.refreshText, { marginLeft: 8 }]}>{loading ? 'Cargando…' : 'Refrescar'}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -904,11 +903,11 @@ const styles = StyleSheet.create({
   image: { width: 64, height: 64, borderRadius: 8, backgroundColor: '#eee' },
   imagePlaceholder: { width: 64, height: 64, borderRadius: 8, backgroundColor: '#eee', alignItems: 'center', justifyContent: 'center' },
   cellName: { flex: 1, marginRight: 8, fontWeight: '600', paddingVertical: 4, paddingHorizontal: 6 },
-  cellSku: { width: 110, color: '#777', paddingVertical: 4, paddingHorizontal: 6 },
-  cellMoney: { width: 140, textAlign: 'right', paddingVertical: 4, paddingHorizontal: 6 },
-  cellMoneyAccent: { width: 140, textAlign: 'right', color: '#1e88e5', fontWeight: '700', paddingVertical: 4, paddingHorizontal: 6 },
-  cellStock: { width: 70, textAlign: 'center', paddingVertical: 4, paddingHorizontal: 6 },
-  cellDesc: { flex: 1, marginLeft: 8, color: '#555', paddingVertical: 4, paddingHorizontal: 6 },
+  cellSku: { width: 110, minWidth: 90, color: '#777', paddingVertical: 4, paddingHorizontal: 6, flexShrink: 0 },
+  cellMoney: { width: 140, minWidth: 110, textAlign: 'right', paddingVertical: 4, paddingHorizontal: 6, flexShrink: 0 },
+  cellMoneyAccent: { width: 140, minWidth: 110, textAlign: 'right', color: '#1e88e5', fontWeight: '700', paddingVertical: 4, paddingHorizontal: 6, flexShrink: 0 },
+  cellStock: { width: 70, minWidth: 60, textAlign: 'center', paddingVertical: 4, paddingHorizontal: 6, flexShrink: 0 },
+  cellDesc: { flex: 1, minWidth: 120, marginLeft: 8, color: '#555', paddingVertical: 4, paddingHorizontal: 6, flexShrink: 1 },
   cellActions: { width: 90, flexDirection: 'row', justifyContent: 'flex-end' },
   iconBtn: { paddingHorizontal: 6 },
   cellBorder: { borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: '#e5e5e5' },
@@ -934,11 +933,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   mobileImage: { width: 64, height: 64, borderRadius: 8 },
-  mobileTitle: { fontWeight: '700', fontSize: 15, color: '#222' },
-  mobileSub: { color: '#777', marginTop: 2 },
-  mobileRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
+  mobileTitle: { fontWeight: '700', fontSize: 15, color: '#222', flexShrink: 1 },
+  mobileSub: { color: '#777', marginTop: 2, flexShrink: 1 },
+  mobileRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6, flexWrap: 'wrap' },
   mobileLabel: { color: '#555', fontWeight: '600' },
-  mobileValue: { color: '#222', marginLeft: 4 },
+  mobileValue: { color: '#222', marginLeft: 4, flexShrink: 1 },
   mobileDesc: { color: '#555', marginTop: 6 },
   mobileActions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 },
 });

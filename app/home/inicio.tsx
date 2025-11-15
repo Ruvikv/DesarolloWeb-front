@@ -1,9 +1,9 @@
+import { router } from "expo-router";
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, router } from "expo-router";
-import { View, Text, TouchableOpacity, ScrollView, Image, TextInput, FlatList, ActivityIndicator } from "react-native";
+import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from "react-native";
 import styled from "styled-components/native";
-import { productService, Product } from "../../services/catalogoService";
-import { categoriasService, Categoria } from "../../services/categoriasService";
+import { Product, productService } from "../../services/catalogoService";
+import { Categoria, categoriasService } from "../../services/categoriasService";
 
 // Styled Components
 const Container = styled.ScrollView`
