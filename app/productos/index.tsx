@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, TextInput, Switch, Modal, Alert, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import styled from 'styled-components/native';
-import { productosService, ProductoAdmin, calcularPrecioFinal, calcularPrecioTemporal, STOCK_CRITICO } from '../../services/productosService';
-import { categoriasService, Categoria } from '../../services/categoriasService';
-import { productService, actualizarDescripcionCatalogo } from '../../services/catalogoService';
-import ProtectedRoute from '../../components/ProtectedRoute';
 import { useRouter } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Modal, Platform, Switch, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import styled from 'styled-components/native';
+import ProtectedRoute from '../../components/ProtectedRoute';
 import { useAuth } from '../../contexts/AuthContext';
+import { actualizarDescripcionCatalogo, productService } from '../../services/catalogoService';
+import { Categoria, categoriasService } from '../../services/categoriasService';
+import { calcularPrecioFinal, calcularPrecioTemporal, ProductoAdmin, productosService, STOCK_CRITICO } from '../../services/productosService';
 import { safeAsyncStorage } from '../../services/storageUtils';
 
 type GrupoCategoria = { categoriaId: string; categoriaNombre: string; items: ProductoAdmin[] };
@@ -84,6 +84,9 @@ export default function ProductosScreen() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [downloadingExcel, setDownloadingExcel] = useState(false);
   const [downloadingPDF, setDownloadingPDF] = useState(false);
+
+  const { width } = useWindowDimensions();
+  const isMobile = width < 640 || Platform.OS !== 'web';
 
   const cargarDatos = async () => {
     try {
@@ -342,6 +345,7 @@ export default function ProductosScreen() {
           <TouchableOpacity onPress={handleGenerarPreciosConsumidorFinal} style={{ backgroundColor: '#4caf50', paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, marginRight: 8 }}>
             <Text style={{ color: '#fff', fontWeight: '600' }}>Generar precios consumidor final</Text>
           </TouchableOpacity>
+
           <TouchableOpacity
             onPress={async () => {
               try {
@@ -353,14 +357,15 @@ export default function ProductosScreen() {
                 setDownloadingExcel(false);
               }
             }}
-            style={{ backgroundColor: '#607d8b', paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, marginRight: 8, minWidth: 160, alignItems: 'center' }}
+            style={{ backgroundColor: '#607d8b', paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, marginRight: 8, minWidth: isMobile ? 110 : 160, alignItems: 'center' }}
           >
             {downloadingExcel ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={{ color: '#fff' }}>Descargar Excel</Text>
+              <Text style={{ color: '#fff' }}>{isMobile ? 'Excel' : 'Descargar Excel'}</Text>
             )}
           </TouchableOpacity>
+
           <TouchableOpacity
             onPress={async () => {
               try {
@@ -372,12 +377,12 @@ export default function ProductosScreen() {
                 setDownloadingPDF(false);
               }
             }}
-            style={{ backgroundColor: '#795548', paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, minWidth: 160, alignItems: 'center' }}
+            style={{ backgroundColor: '#795548', paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, minWidth: isMobile ? 110 : 160, alignItems: 'center' }}
           >
             {downloadingPDF ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={{ color: '#fff' }}>Descargar PDF</Text>
+              <Text style={{ color: '#fff' }}>{isMobile ? 'PDF' : 'Descargar PDF'}</Text>
             )}
           </TouchableOpacity>
         </View>
