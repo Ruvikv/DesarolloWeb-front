@@ -341,9 +341,12 @@ export default function ProductosScreen() {
         {/* Línea decorativa */}
         <LinearGradient colors={[COLORS.primary, '#764ba2']} style={{ height: 6, borderRadius: 6, marginTop: 8 }} />
 
-        <View style={{ marginTop: 8, flexDirection: 'row' }}>
-          <TouchableOpacity onPress={handleGenerarPreciosConsumidorFinal} style={{ backgroundColor: '#4caf50', paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, marginRight: 8 }}>
-            <Text style={{ color: '#fff', fontWeight: '600' }}>Generar precios consumidor final</Text>
+        <View style={{ marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <TouchableOpacity
+            onPress={handleGenerarPreciosConsumidorFinal}
+            style={{ backgroundColor: '#4caf50', paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, marginRight: 8, minWidth: isMobile ? 44 : 200, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '600', fontSize: isMobile ? 12 : 14 }}>{isMobile ? 'Generar' : 'Generar precios consumidor final'}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
