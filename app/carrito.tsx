@@ -3,11 +3,9 @@ import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TextInput, Toucha
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCart } from '../contexts/CartContext';
 import { pedidoService } from '../services/pedidoService';
-import { useRouter } from 'expo-router';
 
 export default function CarritoScreen() {
   const { items, totalItems, totalPrice, increaseQty, decreaseQty, removeItem, clear } = useCart();
-  const router = useRouter();
 
   const [nombre, setNombre] = React.useState('');
   const [email, setEmail] = React.useState('');
@@ -40,9 +38,7 @@ export default function CarritoScreen() {
 
       const itemsPayload = items.map((ci) => ({
         producto_id: String(ci.product.id),
-        nombre: ci.product.name,
         cantidad: Number(ci.quantity),
-        precio_unitario: Number(ci.product.price || 0),
       }));
 
       const payload = {
@@ -51,53 +47,36 @@ export default function CarritoScreen() {
         telefono: telefono.trim(),
         direccion: direccion.trim(),
         items: itemsPayload,
-        total: totalPrice,
-        enviar_correo: true, // Asegurarse de que se envíe el correo
       } as const;
 
-      console.log('Enviando pedido:', JSON.stringify(payload));
+      await pedidoService.registrarPedidoConsumidor(payload as any);
 
-      // Intentar registrar el pedido
-      try {
-        const respuesta = await pedidoService.registrarPedidoConsumidor(payload as any);
-        console.log('Respuesta del servidor:', respuesta);
-
-        // Limpiar carrito y navegar a la pantalla de éxito
-        clear();
-        const nombreParam = nombre.trim();
-        const emailParam = email.trim();
-        setNombre(''); setEmail(''); setTelefono(''); setDireccion('');
-        router.replace({ pathname: '/pedido/exito', params: { nombre: nombreParam, email: emailParam } });
-      } catch (error) {
-        // Si falla, enviar directamente por correo como fallback
-        console.error('Error al registrar pedido, activando fallback:', error);
-        enviarPedidoPorCorreo();
-      }
+      Alert.alert(
+        '¡Pedido registrado!','Te enviamos un correo con los detalles. Nos contactaremos para coordinar pago y envío.',
+        [
+          { text: 'OK', onPress: () => { clear(); setNombre(''); setEmail(''); setTelefono(''); setDireccion(''); } }
+        ]
+      );
     } catch (error: any) {
-      console.error('Error general en checkout:', error);
-      enviarPedidoPorCorreo();
+      const server = error?.response?.data;
+      const backendMsg = server?.message || server?.error || server?.errors?.[0] || undefined;
+      const msg = backendMsg || error?.message || 'No se pudo registrar el pedido. Intenta nuevamente.';
+      console.warn('Error registrarPedidoConsumidor:', { request: 'POST /usuarios/pedido-consumidor', server });
+
+      const detalleItems = items.map((i) => `${i.product.name} x ${i.quantity}`).join(', ');
+      const cuerpoEmail = `Hola, no pude finalizar mi compra en la app.\n\nNombre: ${nombre}\nEmail: ${email}\nTeléfono: ${telefono}\nDirección: ${direccion}\n\nItems: ${detalleItems}\nTotal mostrado: $${totalPrice.toFixed(2)}\n\nMensaje backend: ${String(msg)}`;
+      const mailtoUrl = `mailto:info@mitienda.com?subject=${encodeURIComponent('Pedido desde app - fallback')}&body=${encodeURIComponent(cuerpoEmail)}`;
+      const whatsappText = `Hola, no pude finalizar mi compra.\n\nNombre: ${nombre}\nDirección: ${direccion}\nItems: ${detalleItems}\nTotal: $${totalPrice.toFixed(2)}`;
+      const whatsappUrl = `https://wa.me/1234567890?text=${encodeURIComponent(whatsappText)}`;
+
+      Alert.alert('Error', String(msg), [
+        { text: 'Reintentar', onPress: handleCheckout },
+        { text: 'Enviar email', onPress: () => Linking.openURL(mailtoUrl) },
+        { text: 'WhatsApp', onPress: () => Linking.openURL(whatsappUrl) },
+      ]);
     } finally {
       setEnviando(false);
     }
-  };
-
-  // Función para enviar el pedido por correo como fallback
-  const enviarPedidoPorCorreo = () => {
-    const detalleItems = items.map((i) => `${i.product.name} x ${i.quantity}`).join(', ');
-    const cuerpoEmail = `Hola, quiero realizar este pedido:\n\nNombre: ${nombre}\nEmail: ${email}\nTeléfono: ${telefono}\nDirección: ${direccion}\n\nItems: ${detalleItems}\nTotal mostrado: $${totalPrice.toFixed(2)}`;
-    const mailtoUrl = `mailto:distriferreart@gmail.com?subject=${encodeURIComponent('Nuevo pedido desde app')}&body=${encodeURIComponent(cuerpoEmail)}`;
-    const whatsappText = `Hola, quiero realizar este pedido:\n\nNombre: ${nombre}\nDirección: ${direccion}\nItems: ${detalleItems}\nTotal: $${totalPrice.toFixed(2)}`;
-    const whatsappUrl = `https://wa.me/5491158444385?text=${encodeURIComponent(whatsappText)}`;
-
-    Alert.alert(
-      'Enviar pedido manualmente', 
-      'El sistema de pedidos no está disponible en este momento. ¿Cómo prefieres enviar tu pedido?',
-      [
-        { text: 'Por Email', onPress: () => Linking.openURL(mailtoUrl) },
-        { text: 'Por WhatsApp', onPress: () => Linking.openURL(whatsappUrl) },
-        { text: 'Cancelar', style: 'cancel' }
-      ]
-    );
   };
 
   return (

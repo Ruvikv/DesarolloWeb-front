@@ -1,0 +1,289 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { 
+  EyeIcon, 
+  ClockIcon, 
+  CheckCircleIcon, 
+  XCircleIcon,
+  TruckIcon,
+  CurrencyDollarIcon,
+  UserIcon,
+  CalendarIcon,
+  ShoppingBagIcon
+} from '@heroicons/react/24/outline';
+import { Pedido } from '@/services/pedidos';
+import { usePedidos } from '@/hooks/usePedidos';
+import { getSession } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
+import api from '@/lib/api';
+
+const estadoConfig = {
+  pendiente: { color: 'bg-yellow-100 text-yellow-800', icon: ClockIcon, label: 'Pendiente' },
+  confirmado: { color: 'bg-blue-100 text-blue-800', icon: CheckCircleIcon, label: 'Confirmado' },
+  preparando: { color: 'bg-purple-100 text-purple-800', icon: ShoppingBagIcon, label: 'Preparando' },
+  enviado: { color: 'bg-indigo-100 text-indigo-800', icon: TruckIcon, label: 'Enviado' },
+  entregado: { color: 'bg-green-100 text-green-800', icon: CheckCircleIcon, label: 'Entregado' },
+  cancelado: { color: 'bg-red-100 text-red-800', icon: XCircleIcon, label: 'Cancelado' }
+};
+
+export default function AdminPedidos() {
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const {
+    pedidos,
+    loading,
+    error,
+    actualizandoEstado,
+    cargarPedidos,
+    actualizarEstado: actualizarEstadoPedido,
+    clearError
+  } = usePedidos();
+
+  // Estados del componente
+  const [filtroEstado, setFiltroEstado] = useState<string>('');
+  const [pedidoSeleccionado, setPedidoSeleccionado] = useState<Pedido | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [estadoParaVideo, setEstadoParaVideo] = useState<string>('');
+  const [pedidoParaVideo, setPedidoParaVideo] = useState<string>('');
+  // Mapa de toggles por pedido para habilitar entrega manual/externa
+  const [entregaManualMap, setEntregaManualMap] = useState<Record<string, boolean>>({});
+
+  // Verificar autenticación
+  useEffect(() => {
+    const session = getSession();
+    if (session.token) {
+      setIsAuthenticated(true);
+    } else {
+      router.push('/login');
+    }
+    setAuthLoading(false);
+  }, [router]);
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/login');
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  // Mostrar loading mientras se verifica la autenticación
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Verificando autenticación...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // No renderizar nada si no está autenticado (se redirigirá)
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  const actualizarEstado = async (pedidoId: string, nuevoEstado: string) => {
+    const entregaManual = nuevoEstado === 'entregado' && entregaManualMap[pedidoId];
+    
+    const result = await actualizarEstadoPedido(pedidoId, nuevoEstado, entregaManual);
+    
+    if (result.success) {
+      alert(`✅ Pedido actualizado a: ${estadoConfig[nuevoEstado as keyof typeof estadoConfig]?.label}`);
+    } else {
+      alert(`❌ ${result.message}`);
+    }
+  };
+
+  const actualizarEstadoConVideo = async (pedidoId: string, nuevoEstado: string, video?: File) => {
+    try {
+      
+      const formData = new FormData();
+      formData.append('estado', nuevoEstado);
+      if (video) {
+        // Solo enviar bajo la key 'video'. No setear Content-Type manualmente.
+        formData.append('video', video);
+      }
+
+      const response = await api.put(`/productos/admin/pedidos/${pedidoId}/estado`, formData);
+
+      if (response.status >= 200 && response.status < 300) {
+        await cargarPedidos();
+        alert(`✅ Pedido actualizado a: ${estadoConfig[nuevoEstado as keyof typeof estadoConfig]?.label}`);
+        // Limpiar estado del video
+        setVideoFile(null);
+        setVideoPreview(null);
+        setShowVideoModal(false);
+      } else {
+        console.error('Actualizar estado (con video) fallo:', { status: response.status });
+        alert(`❌ Error al actualizar el pedido (HTTP ${response.status})`);
+      }
+    } catch (error: any) {
+      console.error('Error al actualizar estado con video:', error);
+      alert(`❌ Error al actualizar el pedido: ${error?.response?.data?.message || 'Error de conexión'}`);
+    }
+  };
+}
+
+// src/hooks/usePedidos.ts
+
+import { useState, useEffect } from 'react';
+import { pedidosService, Pedido } from '@/services/pedidos';
+
+export const usePedidos = () => {
+  const [pedidos, setPedidos] = useState<Pedido[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [actualizandoEstado, setActualizandoEstado] = useState<string | null>(null);
+
+  const cargarPedidos = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const pedidosData = await pedidosService.obtenerPedidos();
+      setPedidos(pedidosData);
+    } catch (error: any) {
+      console.error('Error al cargar pedidos:', error);
+      setError(error.message || 'Error al cargar pedidos');
+      
+      // Si es un error de conexión, mostrar mensaje más específico
+      if (error.message?.includes('fetch')) {
+        setError('No se puede conectar con el servidor. Verifica que el backend esté corriendo.');
+      } else if (error.message?.includes('401')) {
+        setError('No tienes permisos para ver los pedidos. Verifica tu autenticación.');
+      } else if (error.message?.includes('404')) {
+        setError('El endpoint de pedidos no existe. Verifica la configuración del backend.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const actualizarEstado = async (pedidoId: string, nuevoEstado: string, entregaManual?: boolean) => {
+    try {
+      setActualizandoEstado(pedidoId);
+      setError(null);
+      
+      await pedidosService.actualizarEstadoPedido(pedidoId, nuevoEstado, entregaManual);
+      await cargarPedidos(); // Recargar lista
+      
+      return { success: true, message: `Pedido actualizado a: ${nuevoEstado}` };
+    } catch (error: any) {
+      console.error('Error al actualizar estado:', error);
+      const errorMessage = error.message || 'Error al actualizar pedido';
+      setError(errorMessage);
+      return { success: false, message: errorMessage };
+    } finally {
+      setActualizandoEstado(null);
+    }
+  };
+
+  const obtenerPedidoPorId = async (pedidoId: string) => {
+    try {
+      setError(null);
+      return await pedidosService.obtenerPedidoPorId(pedidoId);
+    } catch (error: any) {
+      console.error('Error al obtener pedido:', error);
+      setError(error.message || 'Error al obtener pedido');
+      throw error;
+    }
+  };
+
+  useEffect(() => {
+    cargarPedidos();
+  }, []);
+
+  return {
+    pedidos,
+    loading,
+    error,
+    actualizandoEstado,
+    cargarPedidos,
+    actualizarEstado,
+    obtenerPedidoPorId,
+    clearError: () => setError(null)
+  };
+};
+
+// src/services/pedidos.ts
+
+import api from '@/lib/api';
+
+export interface PedidoItem {
+  id: string;
+  producto_id: string;
+  cantidad: number;
+  precio_unitario: number;
+}
+
+export interface Pedido {
+  id: string;
+  fecha: string;
+  estado: 'pendiente' | 'confirmado' | 'preparando' | 'enviado' | 'entregado' | 'cancelado';
+  total: number;
+  total_calculado: number;
+  observaciones: {
+    nombre?: string;
+    email?: string;
+    telefono?: string;
+    direccion?: string;
+    notas?: string;
+  };
+  pedido_items: PedidoItem[];
+  productos?: any[];
+}
+
+export class PedidosService {
+  private getAuthHeaders() {
+    return {
+      'Content-Type': 'application/json'
+    } as Record<string, string>;
+  }
+
+  async obtenerPedidos(): Promise<Pedido[]> {
+    try {
+      const res = await api.get('/productos/admin/pedidos', {
+        headers: this.getAuthHeaders(),
+      });
+      const data = res.data;
+      return Array.isArray(data) ? data : data?.data || [];
+    } catch (error) {
+      console.error('Error al obtener pedidos:', error);
+      throw error as any;
+    }
+  }
+
+  async actualizarEstadoPedido(pedidoId: string, nuevoEstado: string, entregaManual?: boolean): Promise<void> {
+    try {
+      const body: any = { estado: nuevoEstado };
+      if (entregaManual) {
+        body.entrega_manual = true;
+      }
+
+      await api.patch(`/productos/admin/pedidos/${pedidoId}/estado`, body, {
+        headers: this.getAuthHeaders(),
+      });
+    } catch (error) {
+      console.error('Error al actualizar estado del pedido:', error);
+      throw error as any;
+    }
+  }
+
+  async obtenerPedidoPorId(pedidoId: string): Promise<Pedido> {
+    try {
+      const res = await api.get(`/productos/admin/pedidos/${pedidoId}`, {
+        headers: this.getAuthHeaders(),
+      });
+      return res.data as Pedido;
+    } catch (error) {
+      console.error('Error al obtener pedido por ID:', error);
+      throw error as any;
+    }
+  }
+}
+
+export const pedidosService = new PedidosService();

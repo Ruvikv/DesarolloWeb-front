@@ -1,7 +1,9 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_CONFIG } from '../config/api.js';
 
+// Configuración base de la API
 // Configuración base de la API
 const API_BASE_URL = API_CONFIG.BASE_URL;
 

@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Dimensions, Activ
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
-import { useRouter } from 'expo-router';
+import { useRouter, Href } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 const CARD_SIZE = width / 2 - 32;
@@ -31,7 +31,7 @@ const Card: React.FC<CardProps> = ({ title, subtitle, icon, onPress, gradient, a
 );
 
 const Dashboard = () => {
-  const { user, isLoading, logout } = useAuth();
+  const { user, token, isLoading, logout } = useAuth();
   const router = useRouter();
   const firstName = user?.name?.split(' ')[0] ?? 'Usuario';
 
@@ -44,15 +44,15 @@ const Dashboard = () => {
     }
   };
 
-  // Protección de ruta: redirigir al login si no hay usuario autenticado
+  // Protección de ruta: redirigir al login si no hay token
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!isLoading && !token) {
       router.replace('/auth/login');
     }
-  }, [user, isLoading, router]);
+  }, [token, isLoading, router]);
 
-  // Mostrar loading mientras se verifica la autenticación
-  if (isLoading) {
+  // Mostrar loading solo si se está verificando y aún no hay token
+  if (isLoading && !token) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
@@ -61,18 +61,60 @@ const Dashboard = () => {
     );
   }
 
-  // Si no hay usuario, no renderizar nada (se redirigirá)
-  if (!user) {
+  // Si no hay token, no renderizar nada (se redirigirá)
+  if (!token) {
     return null;
   }
 
   const cards: CardProps[] = [
-    { title: 'Productos', subtitle: 'Gestiona tu inventario', icon: 'cube-outline', onPress: () => router.push('/productos'), gradient: ['#42e695', '#3bb2b8'] as const, actionLabel: 'Gestionar' },
-    { title: 'Lista de Precios', subtitle: 'Actualiza precios', icon: 'pricetag-outline', onPress: () => router.push('/precios/lista'), gradient: ['#7f7fd5', '#86a8e7'] as const, actionLabel: 'Ver lista' },
-    { title: 'Catálogo Visual', subtitle: 'Imágenes y detalles', icon: 'images-outline', onPress: () => router.push('/catalogo/visual-admin'), gradient: ['#ff6a00', '#ee0979'] as const, actionLabel: 'Gestionar' },
-    { title: 'Pedidos', subtitle: 'Órdenes de clientes', icon: 'clipboard-outline', gradient: ['#ff512f', '#dd2476'] as const, actionLabel: 'Gestionar' },
-    { title: 'Ventas', subtitle: 'Ventas manuales', icon: 'receipt-outline', gradient: ['#11998e', '#38ef7d'] as const, actionLabel: 'Registrar' },
-    { title: 'Configuración', subtitle: 'Preferencias del sistema', icon: 'settings-outline', gradient: ['#636363', '#a2ab58'] as const, actionLabel: 'Configurar' },
+    {
+      title: 'Productos',
+      subtitle: 'Gestiona tu inventario',
+      icon: 'cube-outline',
+      gradient: ['#42e695', '#3bb2b8'] as const,
+      actionLabel: 'Gestionar',
+      onPress: () => router.push('/productos')
+    },
+    {
+      title: 'Lista de Precios',
+      subtitle: 'Actualiza precios',
+      icon: 'pricetag-outline',
+      gradient: ['#7f7fd5', '#86a8e7'] as const,
+      actionLabel: 'Ver lista',
+      onPress: () => router.push('/precios/lista')
+    },
+    {
+      title: 'Catálogo Visual',
+      subtitle: 'Imágenes y detalles',
+      icon: 'images-outline',
+      gradient: ['#ff6a00', '#ee0979'] as const,
+      actionLabel: 'Ver',
+      onPress: () => router.push('/catalogo/visual')
+    },
+    {
+      title: 'Pedidos',
+      subtitle: 'Órdenes de clientes',
+      icon: 'clipboard-outline',
+      gradient: ['#ff512f', '#dd2476'] as const,
+      actionLabel: 'Gestionar',
+      onPress: () => router.push('/pedidos/admin' as Href<'/pedidos/admin'>)
+    },
+    {
+      title: 'Ventas',
+      subtitle: 'Ventas manuales',
+      icon: 'receipt-outline',
+      gradient: ['#11998e', '#38ef7d'] as const,
+      actionLabel: 'Registrar',
+      onPress: () => router.push('/ventas'),
+    },
+    {
+      title: 'Configuración',
+      subtitle: 'Preferencias del sistema',
+      icon: 'settings-outline',
+      gradient: ['#636363', '#a2ab58'] as const,
+      actionLabel: 'Configurar',
+      onPress: () => router.push('/configuracion'),
+    },
   ];
 
   return (
@@ -80,7 +122,7 @@ const Dashboard = () => {
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Hola, {firstName} 👋</Text>
-          <Text style={styles.welcome}>Panel de Administración</Text>
+          <Text style={styles.welcome}>Panel de Control</Text>
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={24} color="#ff4444" />

@@ -44,7 +44,7 @@ export default function ListaPreciosScreen() {
   const [categorias, setCategorias] = useState<CategoriaItem[]>([]);
   const [loadingCategorias, setLoadingCategorias] = useState<boolean>(false);
   const [categoriaOpen, setCategoriaOpen] = useState<boolean>(false);
-  const [editImagenes, setEditImagenes] = useState<any[]>([]);
+  const [editImagenes, setEditImagenes] = useState<File[]>([]);
 
   // Estado y refs para lector en Web (fallback sin expo-barcode-scanner)
   const [webDetectorAvailable, setWebDetectorAvailable] = useState<boolean>(false);
@@ -301,7 +301,7 @@ export default function ListaPreciosScreen() {
                 <Text style={styles.mobileLabel}>Costo:</Text>
                 <Text style={styles.mobileValue}>{typeof precioCosto === 'number' ? `$ ${precioCosto.toFixed(2)}` : '—'}</Text>
                 <Text style={[styles.mobileLabel, { marginLeft: 8 }]}>Ajustado:</Text>
-                <Text style={[styles.mobileValue, { color: '#1e88e5' }]}>{typeof ajustado === 'number' ? `$ ${ajustado.toFixed(2)}` : '—'}</Text>
+                <Text style={[styles.mobileValue, { color: '#4f46e5' }]}>{typeof ajustado === 'number' ? `$ ${ajustado.toFixed(2)}` : '—'}</Text>
               </View>
               <View style={styles.mobileRow}>
                 <Text style={styles.mobileLabel}>Stock:</Text>
@@ -314,7 +314,7 @@ export default function ListaPreciosScreen() {
           </View>
           <View style={styles.mobileActions}>
             <TouchableOpacity style={styles.iconBtn} onPress={onEdit}>
-              <Ionicons name="create-outline" size={18} color="#1e88e5" />
+              <Ionicons name="create-outline" size={18} color="#667eea" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconBtn} onPress={onDelete}>
               <Ionicons name="trash-outline" size={18} color="#e53935" />
@@ -334,7 +334,7 @@ export default function ListaPreciosScreen() {
         <Text style={[styles.cellDesc, styles.cellBorder]} numberOfLines={1}>{desc || '—'}</Text>
         <View style={styles.cellActions}>
           <TouchableOpacity style={styles.iconBtn} onPress={onEdit}>
-            <Ionicons name="create-outline" size={18} color="#1e88e5" />
+            <Ionicons name="create-outline" size={18} color="#667eea" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} onPress={onDelete}>
             <Ionicons name="trash-outline" size={18} color="#e53935" />
@@ -344,11 +344,12 @@ export default function ListaPreciosScreen() {
     );
   };
 
-  const renderMayItem = ({ item }: { item: any }) => {
+  const renderMayItem = ({ item, index }: { item: any; index: number }) => {
     const nombre = item?.producto?.nombre || item?.nombre || 'Producto';
     const precio = item?.precio_mayorista ?? item?.precio ?? item?.precio_final;
+    const even = index % 2 === 0;
     return (
-      <View style={styles.row}>
+      <View style={[styles.row, even && styles.rowEven]}>
         <Text style={styles.cellName}>{nombre}</Text>
         <Text style={styles.cellMoney}>{
           typeof precio === 'number' ? `$ ${Number(precio).toFixed(2)}` : '—'
@@ -456,13 +457,13 @@ export default function ListaPreciosScreen() {
 
       {loading ? (
         <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color="#1e88e5" />
+          <ActivityIndicator size="large" color="#667eea" />
           <Text style={styles.loadingText}>Obteniendo datos…</Text>
         </View>
       ) : (
         <View>
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Ajuste Global de Precio de Costo</Text>
+            <Text style={[styles.sectionTitle, styles.sectionTitleChip]}>Ajuste Global de Precio de Costo</Text>
             <Text style={styles.adjustHint}>Este valor (en %) se aplica al precio de costo antes de calcular el precio final.</Text>
           <View style={styles.adjustRow}>
             <TextInput
@@ -499,7 +500,7 @@ export default function ListaPreciosScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Consumidor Final</Text>
+            <Text style={[styles.sectionTitle, styles.sectionTitleChip]}>Consumidor Final</Text>
             {isMobile ? (
               <FlatList
                 data={consumidorFinal}
@@ -521,7 +522,7 @@ export default function ListaPreciosScreen() {
                       <Text style={[styles.cellName, styles.cellBorder, styles.headerCellText]} numberOfLines={1}>Nombre</Text>
                       <Text style={[styles.cellSku, styles.cellBorder, styles.headerCellText]} numberOfLines={1}>SKU</Text>
                       <Text style={[styles.cellMoney, styles.cellBorder, styles.headerCellText]} numberOfLines={1}>Precio de Costo</Text>
-                      <Text style={[styles.cellMoneyAccent, styles.cellBorder, styles.headerCellText]} numberOfLines={1}>Costo Ajustado</Text>
+                      <Text style={[styles.cellMoneyAccent, styles.cellBorder, styles.headerCellText, styles.headerAccentCell]} numberOfLines={1}>Costo Ajustado</Text>
                       <Text style={[styles.cellStock, styles.cellBorder, styles.headerCellText]} numberOfLines={1}>Stock</Text>
                       <Text style={[styles.cellDesc, styles.cellBorder, styles.headerCellText]} numberOfLines={1}>Descripción corta</Text>
                       <View style={[styles.cellActions, styles.cellBorder]}><Text style={styles.headerCellText} numberOfLines={1}>Acciones</Text></View>
@@ -533,7 +534,7 @@ export default function ListaPreciosScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Mayoristas</Text>
+            <Text style={[styles.sectionTitle, styles.sectionTitleChip]}>Mayoristas</Text>
             {isMobile ? (
               <FlatList
                 data={mayoristas}
@@ -559,7 +560,7 @@ export default function ListaPreciosScreen() {
       {/* Modal de lector de código de barras */}
       <Modal visible={scannerVisible} animationType="slide" onRequestClose={() => setScannerVisible(false)}>
         <View style={{ flex: 1, backgroundColor: '#000' }}>
-          <View style={{ padding: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#6a1b9a' }}>
+          <View style={{ padding: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#667eea' }}>
             <Text style={{ color: '#fff', fontWeight: '700' }}>Lector de código de barras</Text>
             <TouchableOpacity onPress={() => setScannerVisible(false)}>
               <Ionicons name="close-outline" size={24} color="#fff" />
@@ -575,7 +576,7 @@ export default function ListaPreciosScreen() {
               value={manualCode}
               style={{ flex: 1, marginLeft: 8, backgroundColor: '#222', color: '#eee', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}
             />
-            <TouchableOpacity onPress={() => manualCode.trim() && onBarcodeScannedWeb(manualCode.trim())} style={{ marginLeft: 8, backgroundColor: '#1e88e5', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 }}>
+            <TouchableOpacity onPress={() => manualCode.trim() && onBarcodeScannedWeb(manualCode.trim())} style={{ marginLeft: 8, backgroundColor: '#667eea', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 }}>
               <Ionicons name="checkmark-outline" size={18} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -618,12 +619,12 @@ export default function ListaPreciosScreen() {
                   onChangeText={setManualCode}
                   style={{ flex: 1, backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 }}
                 />
-                <TouchableOpacity
-                  style={{ marginLeft: 8, backgroundColor: '#6a1b9a', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8 }}
-                  onPress={() => manualCode.trim() && onBarcodeScannedWeb(manualCode.trim())}
-                >
-                  <Text style={{ color: '#fff', fontWeight: '700' }}>Buscar</Text>
-                </TouchableOpacity>
+            <TouchableOpacity
+              style={{ marginLeft: 8, backgroundColor: '#667eea', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8 }}
+              onPress={() => manualCode.trim() && onBarcodeScannedWeb(manualCode.trim())}
+            >
+              <Text style={{ color: '#fff', fontWeight: '700' }}>Buscar</Text>
+            </TouchableOpacity>
               </View>
 
               {webCameraCapable && !webCameraActive && (
@@ -708,7 +709,7 @@ export default function ListaPreciosScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalHeaderTitle}>Editar Producto</Text>
               <TouchableOpacity onPress={() => setEditVisible(false)}>
-                <Ionicons name="close-outline" size={24} color="#0d47a1" />
+                <Ionicons name="close-outline" size={24} color="#fff" />
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={{ padding: 16 }} style={{ maxHeight: 520 }}>
@@ -785,7 +786,7 @@ export default function ListaPreciosScreen() {
               })}
               {editImagenes.length > 0 && (
                 <View style={{ marginTop: 8 }}>
-                  {editImagenes.map((f: any, idx: number) => (
+                  {editImagenes.map((f: File, idx: number) => (
                     <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
                       <Ionicons name="document-text-outline" size={16} color="#777" />
                       <Text style={{ marginLeft: 6, color: '#555', flex: 1 }} numberOfLines={1}>{f.name || `imagen-${idx+1}`}</Text>
@@ -813,17 +814,18 @@ export default function ListaPreciosScreen() {
 const styles = StyleSheet.create({
   container: {
     padding: 16,
+    backgroundColor: '#f5f5f5',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
-    backgroundColor: '#f7f9ff',
+    backgroundColor: '#fff',
     padding: 12,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#dfe7ff',
+    borderColor: '#e5e5e5',
   },
   title: {
     fontSize: 22,
@@ -835,17 +837,17 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   refresh: {
-    backgroundColor: '#1e88e5',
+    backgroundColor: '#667eea',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
   },
-  scanBtn: { backgroundColor: '#6a1b9a', marginRight: 8 },
+  scanBtn: { backgroundColor: '#667eea', marginRight: 8 },
   // En móvil, reducir padding para que el botón no se vea gigante
   scanBtnMobile: { paddingHorizontal: 10, paddingVertical: 6 },
-  refreshBtn: { backgroundColor: '#1e88e5' },
+  refreshBtn: { backgroundColor: '#667eea' },
   refreshText: {
     color: '#fff',
     fontWeight: '600',
@@ -874,11 +876,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 8,
   },
+  sectionTitleChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#667eea',
+    color: '#fff',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
   adjustHint: { fontSize: 13, color: '#666', marginBottom: 8 },
   adjustRow: { flexDirection: 'row', alignItems: 'center' },
   adjustInput: { width: 80, borderWidth: 1, borderColor: '#ddd', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 6 },
   percentMark: { marginHorizontal: 8, fontSize: 16, fontWeight: '700', color: '#333' },
-  applyBtn: { backgroundColor: '#6a1b9a', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6 },
+  applyBtn: { backgroundColor: '#667eea', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6 },
   applyBtnText: { color: '#fff', fontWeight: '700' },
   noticeBox: { marginTop: 8, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 8 },
   noticeSuccess: { backgroundColor: '#e8f5e9', borderWidth: StyleSheet.hairlineWidth, borderColor: '#c8e6c9' },
@@ -887,7 +897,7 @@ const styles = StyleSheet.create({
   searchInput: {
     marginLeft: 8,
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff',
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -906,25 +916,26 @@ const styles = StyleSheet.create({
   cellName: { flex: 1, marginRight: 8, fontWeight: '600', paddingVertical: 4, paddingHorizontal: 6 },
   cellSku: { width: 110, color: '#777', paddingVertical: 4, paddingHorizontal: 6 },
   cellMoney: { width: 140, textAlign: 'right', paddingVertical: 4, paddingHorizontal: 6 },
-  cellMoneyAccent: { width: 140, textAlign: 'right', color: '#1e88e5', fontWeight: '700', paddingVertical: 4, paddingHorizontal: 6 },
+  cellMoneyAccent: { width: 140, textAlign: 'right', color: '#4f46e5', fontWeight: '700', paddingVertical: 4, paddingHorizontal: 6, backgroundColor: '#eef2ff', borderRadius: 4 },
   cellStock: { width: 70, textAlign: 'center', paddingVertical: 4, paddingHorizontal: 6 },
   cellDesc: { flex: 1, marginLeft: 8, color: '#555', paddingVertical: 4, paddingHorizontal: 6 },
   cellActions: { width: 90, flexDirection: 'row', justifyContent: 'flex-end' },
   iconBtn: { paddingHorizontal: 6 },
   cellBorder: { borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: '#e5e5e5' },
-  headerRow: { backgroundColor: '#eaf3ff' },
-  headerCellText: { fontWeight: '700', color: '#0d47a1' },
+  headerRow: { backgroundColor: '#667eea' },
+  headerAccentCell: { backgroundColor: '#5b6fe7', borderRadius: 4 },
+  headerCellText: { fontWeight: '700', color: '#ffffff' },
   cellImageHeader: { width: 72, height: 24, justifyContent: 'center' },
   modalLabel: { fontSize: 14, fontWeight: '600', marginBottom: 6, marginTop: 8 },
   modalInput: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: '#fff' },
   fakeUploadRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#eee', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 10, backgroundColor: '#fafafa' },
-  saveBtn: { backgroundColor: '#1e88e5', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8 },
+  saveBtn: { backgroundColor: '#667eea', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8 },
   saveBtnText: { color: '#fff', fontWeight: '700' },
   modalNote: { fontSize: 12, color: '#666', marginTop: 4 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center', padding: 16 },
-  modalCard: { width: '100%', maxWidth: 900, borderRadius: 14, backgroundColor: '#f9fbff', overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, elevation: 6, borderWidth: StyleSheet.hairlineWidth, borderColor: '#cfe2ff' },
-  modalHeader: { padding: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#dbe8ff', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#cfe2ff' },
-  modalHeaderTitle: { fontWeight: '700', color: '#0b3fa8' },
+  modalCard: { width: '100%', maxWidth: 900, borderRadius: 14, backgroundColor: '#fff', overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, elevation: 6, borderWidth: StyleSheet.hairlineWidth, borderColor: '#e5e5e5' },
+  modalHeader: { padding: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#667eea', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#667eea' },
+  modalHeaderTitle: { fontWeight: '700', color: '#fff' },
   // Estilos móviles para tarjeta compacta
   mobileCard: {
     borderWidth: StyleSheet.hairlineWidth,

@@ -4,8 +4,9 @@ import { fetchWithTimeout } from './httpUtils';
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { API_CONFIG } from '../config/api.js';
+import { prewarmService } from './prewarmService';
 
-// Configuración base de la API
+// Configuración base de la API: usar misma BASE_URL para web y nativo (se define vía EXPO_PUBLIC_API_URL o fallback)
 const API_BASE_URL = API_CONFIG.BASE_URL;
 
 // Crear instancia de axios para catálogo
@@ -136,16 +137,32 @@ function mapBackendProduct(backendProduct: BackendProduct): Product {
 export const productService = {
   getPublicProducts: async (): Promise<Product[]> => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/catalogo/publico`, {
+      let response = await fetchWithTimeout(`${API_BASE_URL}/catalogo/publico`, {
         method: 'GET',
         headers: {
           Accept: 'application/json',
-        },
+                  },
         mode: 'cors',
-        timeoutMs: API_CONFIG.TIMEOUT,
+        timeoutMs: 30000,
       });
       
       if (!response.ok) {
+        // Si el backend respondió con 5xx, intentar pre-calentar y reintentar una vez
+        if (response.status >= 500) {
+          console.warn(`Servidor respondió ${response.status} en /catalogo/publico, intentando reintento tras warmup...`);
+          // await prewarmService.warmupBackend();
+          const response2 = await fetchWithTimeout(`${API_BASE_URL}/catalogo/publico`, {
+            method: 'GET',
+            headers: {
+              Accept: 'application/json',
+            },
+            mode: 'cors',
+            timeoutMs: 45000,
+          });
+          if (!response2.ok) throw new Error(`HTTP error! status: ${response2.status}`);
+          const backendProducts2: BackendProduct[] = await response2.json();
+          return backendProducts2.map(mapBackendProduct);
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
@@ -157,6 +174,23 @@ export const productService = {
       }
       return backendProducts.map(mapBackendProduct);
     } catch (error) {
+      const isAbort = error instanceof Error && /Abort/i.test(error.name + ' ' + error.message);
+      if (isAbort) {
+        try {
+          // await prewarmService.warmupBackend();
+          const response2 = await fetchWithTimeout(`${API_BASE_URL}/catalogo/publico`, {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+            mode: 'cors',
+            timeoutMs: 45000,
+          });
+          if (!response2.ok) throw new Error(`HTTP error! status: ${response2.status}`);
+          const backendProducts2: BackendProduct[] = await response2.json();
+          return backendProducts2.map(mapBackendProduct);
+      } catch (e2) {
+        console.error('Reintento fallido al obtener productos públicos:', e2);
+      }
+      }
       console.error('Error al obtener productos públicos:', error);
       throw error;
     }
@@ -165,13 +199,13 @@ export const productService = {
   getVisualCatalog: async (): Promise<Product[]> => {
     try {
       // Usar fetch con mode: 'cors' y headers apropiados para evitar problemas CORS
-      const response = await fetchWithTimeout(`${API_BASE_URL}/catalogo/visual`, {
+      let response = await fetchWithTimeout(`${API_BASE_URL}/catalogo/visual`, {
         method: 'GET',
         headers: {
           Accept: 'application/json',
         },
         mode: 'cors',
-        timeoutMs: API_CONFIG.TIMEOUT,
+        timeoutMs: 30000,
       });
       
       if (!response.ok) {
@@ -181,6 +215,23 @@ export const productService = {
       const backendProducts: BackendProduct[] = await response.json();
       return backendProducts.map(mapBackendProduct);
     } catch (error) {
+      const isAbort = error instanceof Error && /Abort/i.test(error.name + ' ' + error.message);
+      if (isAbort) {
+        try {
+          // await prewarmService.warmupBackend();
+          const response2 = await fetchWithTimeout(`${API_BASE_URL}/catalogo/visual`, {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+            mode: 'cors',
+            timeoutMs: 45000,
+          });
+          if (!response2.ok) throw new Error(`HTTP error! status: ${response2.status}`);
+          const backendProducts2: BackendProduct[] = await response2.json();
+          return backendProducts2.map(mapBackendProduct);
+        } catch (e2) {
+          console.error('Reintento fallido al obtener catálogo visual:', e2);
+        }
+      }
       console.error('Error al obtener catálogo visual:', error);
       throw error;
     }
@@ -188,22 +239,52 @@ export const productService = {
 
   getFeaturedProducts: async (): Promise<Product[]> => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/catalogo/destacados`, {
+      let response = await fetchWithTimeout(`${API_BASE_URL}/catalogo/destacados`, {
         method: 'GET',
         headers: {
-          Accept: 'application/json',
+          Accept: 'application/json'
         },
         mode: 'cors',
-        timeoutMs: API_CONFIG.TIMEOUT,
+        timeoutMs: 30000,
       });
-      
+
       if (!response.ok) {
+        if (response.status >= 500) {
+          console.warn(`Servidor respondió ${response.status} en /catalogo/destacados, intentando reintento tras warmup...`);
+          // await prewarmService.warmupBackend();
+          const response2 = await fetchWithTimeout(`${API_BASE_URL}/catalogo/destacados`, {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+            mode: 'cors',
+            timeoutMs: 45000,
+          });
+          if (!response2.ok) throw new Error(`HTTP error! status: ${response2.status}`);
+          const backendProducts2: BackendProduct[] = await response2.json();
+          return backendProducts2.map(mapBackendProduct);
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const backendProducts: BackendProduct[] = await response.json();
       return backendProducts.map(mapBackendProduct);
     } catch (error) {
+      const isAbort = error instanceof Error && /Abort/i.test(error.name + ' ' + error.message);
+      if (isAbort) {
+        try {
+          // await prewarmService.warmupBackend();
+          const response2 = await fetchWithTimeout(`${API_BASE_URL}/catalogo/destacados`, {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+            mode: 'cors',
+            timeoutMs: 45000,
+          });
+          if (!response2.ok) throw new Error(`HTTP error! status: ${response2.status}`);
+          const backendProducts2: BackendProduct[] = await response2.json();
+          return backendProducts2.map(mapBackendProduct);
+        } catch (e2) {
+          console.error('Reintento fallido al obtener productos destacados:', e2);
+        }
+      }
       console.error('Error al obtener productos destacados:', error);
       throw error;
     }
@@ -217,7 +298,7 @@ export const productService = {
           Accept: 'application/json',
         },
         mode: 'cors',
-        timeoutMs: API_CONFIG.TIMEOUT,
+        timeoutMs: 30000,
       });
       
       if (!response.ok) {
@@ -240,7 +321,7 @@ export const productService = {
           Accept: 'application/json',
         },
         mode: 'cors',
-        timeoutMs: API_CONFIG.TIMEOUT,
+        timeoutMs: 30000,
       });
       
       if (!response.ok) {
@@ -267,7 +348,7 @@ export const productService = {
           method: 'GET',
           headers,
           mode: 'cors',
-          timeoutMs: API_CONFIG.TIMEOUT,
+          timeoutMs: 30000,
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const blob = await res.blob();
@@ -301,7 +382,7 @@ export const productService = {
           method: 'GET',
           headers,
           mode: 'cors',
-          timeoutMs: API_CONFIG.TIMEOUT,
+          timeoutMs: 30000,
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const blob = await res.blob();
@@ -362,146 +443,149 @@ export async function actualizarDescripcionCatalogo(
   }
 }
 
-// ---------------- Admin catálogo visual ----------------
+// =====================
+// Funciones ADMIN CATÁLOGO
+// =====================
+
+// Tipo para productos del panel admin de catálogo
 export interface ProductoCatalogoAdmin {
   id: string;
   nombre: string;
-  descripcion: string;
-  categoria: string;
-  imagen_principal: string | null;
-  imagenes: string[];
-  stock: number;
-  precio_final: number | null;
+  descripcion?: string;
+  precio_final?: number;
+  categoria?: string;
+  stock?: number;
+  imagen_principal?: string | null;
+  imagenes?: string[];
   destacado?: boolean;
 }
 
+// Obtiene productos para administración del catálogo
 export async function getCatalogProductsAdmin(): Promise<ProductoCatalogoAdmin[]> {
   try {
-    const res = await catalogoClient.get('/catalogo/productos', {
-      headers: { Accept: 'application/json' },
-    });
-    const raw = res.data;
-    const arr: any[] = Array.isArray(raw) ? raw : [];
-    return arr.map((p: any) => {
-      const categoria = typeof p.categoria === 'string' ? p.categoria : (p?.categoria?.nombre || '');
-      return {
-        id: p.id,
-        nombre: p.nombre || p.titulo || '',
-        descripcion: p.descripcion || p.descripcion_corta || '',
-        categoria,
-        imagen_principal: p.imagen_principal ?? p.imagen ?? null,
-        imagenes: Array.isArray(p.imagenes) ? p.imagenes : [],
-        stock: typeof p.stock === 'number' ? p.stock : (p.stock_total ?? 0),
-        precio_final: p.precio_final ?? p.precio ?? null,
-        destacado: Boolean(p.destacado ?? p.is_featured ?? false),
-      } as ProductoCatalogoAdmin;
-    });
+    const token = await safeAsyncStorage.getItem('authToken');
+    const headers: Record<string, string> = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const res = await catalogoClient.get('/catalogo/productos', { headers });
+    const raw = extractData<any[]>(res) || [];
+    return raw.map((p) => ({
+      id: String(p.id),
+      nombre: p.nombre,
+      descripcion: p.descripcion,
+      precio_final: p.precio_final ?? p?.precios_productos?.[0]?.precio_final,
+      categoria: p.categoria,
+      stock: p.stock,
+      imagen_principal: sanitizeImageUrl(p.imagen_principal || p.imagen || ''),
+      imagenes: Array.isArray(p.imagenes)
+        ? p.imagenes.map((u: any) => sanitizeImageUrl(typeof u === 'string' ? u : String(u || ''))).filter(Boolean)
+        : [],
+      destacado: Boolean(p.destacado),
+    }));
   } catch (error) {
-    console.error('[catalogoService] Error obteniendo productos de catálogo admin:', error);
-    return [];
+    console.error('Error al obtener productos admin catálogo:', error);
+    throw error;
   }
 }
 
+// Actualiza/sube imagen principal de un producto
 export async function actualizarImagenPrincipalAdmin(id: string, file: File | Blob): Promise<any> {
   try {
-    const tok = await safeAsyncStorage.getItem('authToken');
-    const formData = new FormData();
-    formData.append('imagen', file);
+    const token = await safeAsyncStorage.getItem('authToken');
     const headers: Record<string, string> = {};
-    if (tok) headers.Authorization = `Bearer ${tok}`;
-    const res = await catalogoClient.put(`/catalogo/producto/${id}/imagen-principal`, formData, { headers });
-    return res.data;
-  } catch (error) {
-    console.error('[catalogoService] Error actualizando imagen principal:', error);
-    throw error;
-  }
-}
+    if (token) headers.Authorization = `Bearer ${token}`;
 
-export async function agregarImagenesGaleriaAdmin(
-  id: string,
-  files: FileList | (File | Blob)[]
-): Promise<any> {
-  try {
-    const tok = await safeAsyncStorage.getItem('authToken');
-    const formData = new FormData();
-    let list: (File | Blob)[] = [];
-    if (Array.isArray(files)) {
-      list = files as (File | Blob)[];
-    } else {
-      const fl = files as FileList;
-      for (let i = 0; i < fl.length; i++) {
-        const item = fl.item(i);
-        if (item) list.push(item);
-      }
+    const form = new FormData();
+    // Nombre del campo asumido como 'imagen'; ajustar si backend usa otro nombre
+    form.append('imagen', file as any);
+
+    const res = await catalogoClient.put(`/catalogo/producto/${id}/imagen-principal`, form, {
+      headers: { ...headers, 'Content-Type': 'multipart/form-data' },
+    });
+    const data = res.data;
+    if (data?.imagen_principal) {
+      data.imagen_principal = sanitizeImageUrl(data.imagen_principal);
     }
-    for (const f of list) formData.append('imagenes', f);
-    const headers: Record<string, string> = {};
-    if (tok) headers.Authorization = `Bearer ${tok}`;
-    const res = await catalogoClient.post(`/catalogo/producto/${id}/imagenes`, formData, { headers });
-    return res.data;
+    return data;
   } catch (error) {
-    console.error('[catalogoService] Error agregando imágenes a galería:', error);
+    console.error(`Error al actualizar imagen principal del producto ${id}:`, error);
     throw error;
   }
 }
 
+// Agrega imágenes a la galería del producto
+export async function agregarImagenesGaleriaAdmin(id: string, files: (File | Blob)[]): Promise<any> {
+  try {
+    const token = await safeAsyncStorage.getItem('authToken');
+    const headers: Record<string, string> = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const form = new FormData();
+    files.forEach((f) => form.append('imagenes', f as any));
+
+    const res = await catalogoClient.post(`/catalogo/producto/${id}/imagenes`, form, {
+      headers: { ...headers, 'Content-Type': 'multipart/form-data' },
+    });
+    const data = res.data;
+    if (Array.isArray(data?.imagenes)) {
+      data.imagenes = data.imagenes.map((u: any) => sanitizeImageUrl(typeof u === 'string' ? u : String(u || ''))).filter(Boolean);
+    }
+    return data;
+  } catch (error) {
+    console.error(`Error al agregar imágenes a la galería del producto ${id}:`, error);
+    throw error;
+  }
+}
+
+// Elimina la imagen principal del producto
 export async function eliminarImagenPrincipalAdmin(id: string): Promise<any> {
   try {
-    const tok = await safeAsyncStorage.getItem('authToken');
+    const token = await safeAsyncStorage.getItem('authToken');
     const headers: Record<string, string> = {};
-    if (tok) headers.Authorization = `Bearer ${tok}`;
+    if (token) headers.Authorization = `Bearer ${token}`;
+
     const res = await catalogoClient.delete(`/catalogo/producto/${id}/imagen-principal`, { headers });
     return res.data;
   } catch (error) {
-    console.error('[catalogoService] Error eliminando imagen principal:', error);
+    console.error(`Error al eliminar imagen principal del producto ${id}:`, error);
     throw error;
   }
 }
 
-export async function eliminarImagenGaleriaAdmin(id: string, imagenUrl: string): Promise<any> {
+// Elimina una imagen específica de la galería
+export async function eliminarImagenGaleriaAdmin(id: string, url: string): Promise<any> {
   try {
-    const tok = await safeAsyncStorage.getItem('authToken');
+    const token = await safeAsyncStorage.getItem('authToken');
     const headers: Record<string, string> = {};
-    if (tok) headers.Authorization = `Bearer ${tok}`;
-    const res = await catalogoClient.delete(`/catalogo/producto/${id}/imagen`, { data: { imagen_url: imagenUrl }, headers });
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    // Algunos backends aceptan cuerpo JSON en DELETE; si no, considerar usar query param
+    const res = await catalogoClient.delete(`/catalogo/producto/${id}/imagen`, {
+      headers,
+      data: { url },
+    } as any);
+    const data = res.data;
+    if (Array.isArray(data?.imagenes)) {
+      data.imagenes = data.imagenes.map((u: any) => sanitizeImageUrl(typeof u === 'string' ? u : String(u || ''))).filter(Boolean);
+    }
+    return data;
+  } catch (error) {
+    console.error(`Error al eliminar imagen de la galería del producto ${id}:`, error);
+    throw error;
+  }
+}
+
+// Alterna el estado de destacado del producto
+export async function toggleDestacadoAdmin(id: string, val: boolean): Promise<any> {
+  try {
+    const token = await safeAsyncStorage.getItem('authToken');
+    const headers: Record<string, string> = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const res = await catalogoClient.patch(`/catalogo/producto/${id}/destacado`, { destacado: val }, { headers });
     return res.data;
   } catch (error) {
-    console.error('[catalogoService] Error eliminando imagen de galería:', error);
-    throw error;
-  }
-}
-
-export async function toggleDestacadoAdmin(id: string, destacadoNuevo: boolean): Promise<any> {
-  try {
-    const tok = await safeAsyncStorage.getItem('authToken');
-    const headers: Record<string, string> = {};
-    if (tok) headers.Authorization = `Bearer ${tok}`;
-
-    // Intento principal (si existe): /catalogo/producto/{id}/destacado
-    try {
-      const res = await catalogoClient.patch(`/catalogo/producto/${id}/destacado`, { destacado: destacadoNuevo }, { headers });
-      return res.data;
-    } catch (e: any) {
-      const status = e?.response?.status;
-      // Fallback 1: /productos/{id}/destacado
-      if (status === 404 || status === 405) {
-        try {
-          const res2 = await catalogoClient.patch(`/productos/${id}/destacado`, { destacado: destacadoNuevo }, { headers });
-          return res2.data;
-        } catch (e2: any) {
-          const status2 = e2?.response?.status;
-          // Fallback 2: PATCH general del catálogo con campo destacado
-          if (status2 === 404 || status2 === 405) {
-            const res3 = await catalogoClient.patch(`/catalogo/producto/${id}`, { destacado: destacadoNuevo }, { headers });
-            return res3.data;
-          }
-          throw e2;
-        }
-      }
-      throw e;
-    }
-  } catch (error) {
-    console.error('[catalogoService] Error alternando destacado:', error);
+    console.error(`Error al alternar destacado del producto ${id}:`, error);
     throw error;
   }
 }

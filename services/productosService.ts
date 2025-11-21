@@ -2,7 +2,6 @@ import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { safeAsyncStorage } from './storageUtils';
 import { API_CONFIG } from '../config/api.js';
 
-// Configuración base de la API
 const API_BASE_URL = API_CONFIG.BASE_URL;
 
 // Cliente axios para productos (admin)
@@ -131,7 +130,7 @@ export const productosService = {
       sku?: string;
       unidad_id?: number | null;
       activo?: boolean;
-      imagenes?: Array<any>; // File[] en web o { uri, name, type } en nativo
+      imagenes?: any[]; // soporte para subida de imágenes opcional
     }
   ): Promise<any> => {
     const form = new FormData();
@@ -143,17 +142,18 @@ export const productosService = {
     if (payload.sku !== undefined) form.append('sku', String(payload.sku));
     if (payload.unidad_id !== undefined && payload.unidad_id !== null) form.append('unidad_id', String(payload.unidad_id));
     if (payload.activo !== undefined) form.append('activo', String(payload.activo));
-    // Adjuntar imágenes si están presentes (máximo 5)
-    try {
-      const imgs = Array.isArray(payload.imagenes) ? payload.imagenes.slice(0, 5) : [];
-      for (const img of imgs) {
-        // Soportar File/Blob en web o { uri, name, type } en nativo
-        const name = (img?.name as string) || 'imagen.jpg';
-        const type = (img?.type as string) || 'image/jpeg';
-        const value: any = img;
-        form.append('imagenes', value, name);
-      }
-    } catch {}
+    // Adjuntar imágenes si se proporcionan (RN/Web)
+    if (Array.isArray(payload.imagenes)) {
+      payload.imagenes.forEach((img: any, idx: number) => {
+        // Detectar forma del objeto imagen
+        const uri = img?.uri || img?.url || (typeof img === 'string' ? img : undefined);
+        const name = img?.name || `imagen_${idx}.jpg`;
+        const type = img?.type || 'image/jpeg';
+        if (uri) {
+          form.append('imagenes', { uri, name, type } as any);
+        }
+      });
+    }
 
     try {
       console.log('[productosService] PUT multipart /productos/' + id, { payload });
@@ -186,15 +186,10 @@ export const productosService = {
     return data;
   },
 
+  // Crear producto rápido con nombre y precio de costo
   crearRapido: async (payload: { nombre: string; precio_costo: number }): Promise<any> => {
-    // Ajustarse al contrato mínimo del backend: solo nombre y precio_costo
-    const body = { nombre: String(payload.nombre || ''), precio_costo: Number(payload.precio_costo || 0) };
-    if (!body.nombre || !Number.isFinite(body.precio_costo)) {
-      throw new Error('Payload inválido: nombre y precio_costo son requeridos');
-    }
-    const { data } = await productosClient.post('/productos/rapido', body, {
+    const { data } = await productosClient.post('/productos/rapido', payload, {
       headers: { 'Content-Type': 'application/json' },
-      timeout: 30000,
     });
     return data;
   },

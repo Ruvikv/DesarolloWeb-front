@@ -1,12 +1,12 @@
 import axios from 'axios';
-import { API_CONFIG } from '../config/api.js';
-
-const apiClient = axios.create({
-  baseURL: API_CONFIG.BASE_URL,
-  timeout: API_CONFIG.TIMEOUT,
-  // Remover headers que causan preflight CORS
-  // withCredentials: true, // Comentado para evitar CORS
-});
+ import { API_CONFIG } from '../config/api.js';
+ 
+ const apiClient = axios.create({
+   baseURL: API_CONFIG.BASE_URL,
+   timeout: 30000,
+   // Remover headers que causan preflight CORS
+   // withCredentials: true,
+ });
 
 // Interceptor para manejar headers sin causar preflight
 apiClient.interceptors.request.use(
@@ -58,12 +58,23 @@ export const authService = {
         email: email.trim(),
         password: password
       });
-      
-      console.log('🔍 authService: Respuesta del servidor:', response.data);
-      
+      // Normalizar la respuesta del backend: convertir access_token -> token
+      const raw = response.data || {};
+      const token = raw.access_token || raw.token || raw.jwt || raw.accessToken || '';
+      const userRaw = raw.user || {};
+      const user = userRaw
+        ? {
+            id: String(userRaw.id ?? userRaw._id ?? ''),
+            email: userRaw.email ?? '',
+            name:
+              (userRaw.name ?? [userRaw.nombre, userRaw.apellido].filter(Boolean).join(' ')).trim() ||
+              (userRaw.nombre ?? '')
+          }
+        : undefined;
+
       return {
-        success: true,
-        data: response.data
+        success: !!token, // Considerar éxito solo si hay token
+        data: { token, user },
       };
     } catch (error: any) {
       console.error('Error de login:', error.response?.data || error.message);

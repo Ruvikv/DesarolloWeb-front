@@ -1,18 +1,18 @@
+import { useRouter, Link } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, FlatList, Image, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useRouter } from 'expo-router';
-import { API_CONFIG } from '../../config/api.js';
 import ProtectedRoute from '../../components/ProtectedRoute';
+import { API_CONFIG } from '../../config/api.js';
 import {
   ProductoCatalogoAdmin,
-  getCatalogProductsAdmin,
+  actualizarDescripcionCatalogo,
   actualizarImagenPrincipalAdmin,
   agregarImagenesGaleriaAdmin,
-  eliminarImagenPrincipalAdmin,
   eliminarImagenGaleriaAdmin,
-  toggleDestacadoAdmin,
-  actualizarDescripcionCatalogo,
-  productService
+  eliminarImagenPrincipalAdmin,
+  getCatalogProductsAdmin,
+  productService,
+  toggleDestacadoAdmin
 } from '../../services/catalogoService';
 
 const { width } = Dimensions.get('window');
@@ -45,8 +45,10 @@ function VisualCatalogAdmin() {
   const [pendingGalleryFiles, setPendingGalleryFiles] = useState<(File | Blob)[]>([]);
   const [savingAll, setSavingAll] = useState<boolean>(false);
 
-  const categories = useMemo(() => {
-    const all = productos.map(p => p.categoria).filter(Boolean);
+  const categories = useMemo<string[]>(() => {
+    const all = productos
+      .map(p => p.categoria)
+      .filter((x): x is string => typeof x === 'string' && x.length > 0);
     return Array.from(new Set(all));
   }, [productos]);
 
@@ -125,7 +127,7 @@ function VisualCatalogAdmin() {
       if (pendingPrincipalFile) {
         const res = await actualizarImagenPrincipalAdmin(selectedProduct.id, pendingPrincipalFile);
         const nueva = res?.imagen_principal ?? selectedProduct.imagen_principal;
-        setSelectedProduct(sp => sp ? { ...sp, imagen_principal: nueva } : sp);
+        setSelectedProduct((sp: ProductoCatalogoAdmin | null) => sp ? { ...sp, imagen_principal: nueva } : sp);
         setProductos(prev => prev.map(p => p.id === selectedProduct.id ? { ...p, imagen_principal: nueva } : p));
         setPendingPrincipalFile(null);
       }
@@ -134,7 +136,7 @@ function VisualCatalogAdmin() {
       if (pendingGalleryFiles.length > 0) {
         const res = await agregarImagenesGaleriaAdmin(selectedProduct.id, pendingGalleryFiles);
         const nuevas: string[] = res?.imagenes ?? selectedProduct.imagenes;
-        setSelectedProduct(sp => sp ? { ...sp, imagenes: nuevas } : sp);
+        setSelectedProduct((sp: ProductoCatalogoAdmin | null) => sp ? { ...sp, imagenes: nuevas } : sp);
         setProductos(prev => prev.map(p => p.id === selectedProduct.id ? { ...p, imagenes: nuevas } : p));
         setPendingGalleryFiles([]);
       }
@@ -153,7 +155,7 @@ function VisualCatalogAdmin() {
       setUpdatingPrincipal(true);
       const res = await actualizarImagenPrincipalAdmin(selectedProduct.id, file);
       const nueva = res?.imagen_principal ?? selectedProduct.imagen_principal;
-      setSelectedProduct(sp => sp ? { ...sp, imagen_principal: nueva } : sp);
+      setSelectedProduct((sp: ProductoCatalogoAdmin | null) => sp ? { ...sp, imagen_principal: nueva } : sp);
       setProductos(prev => prev.map(p => p.id === selectedProduct.id ? { ...p, imagen_principal: nueva } : p));
       setPendingPrincipalFile(null);
     } catch (e: any) {
@@ -167,7 +169,7 @@ function VisualCatalogAdmin() {
     if (!selectedProduct) return;
     try {
       await eliminarImagenPrincipalAdmin(selectedProduct.id);
-      setSelectedProduct(sp => sp ? { ...sp, imagen_principal: null } : sp);
+      setSelectedProduct((sp: ProductoCatalogoAdmin | null) => sp ? { ...sp, imagen_principal: null } : sp);
       setProductos(prev => prev.map(p => p.id === selectedProduct.id ? { ...p, imagen_principal: null } : p));
     } catch (e) {
       Alert.alert('Error', 'No se pudo eliminar la imagen principal');
@@ -179,7 +181,7 @@ function VisualCatalogAdmin() {
     try {
       const res = await agregarImagenesGaleriaAdmin(selectedProduct.id, files);
       const nuevas: string[] = res?.imagenes ?? selectedProduct.imagenes;
-      setSelectedProduct(sp => sp ? { ...sp, imagenes: nuevas } : sp);
+      setSelectedProduct((sp: ProductoCatalogoAdmin | null) => sp ? { ...sp, imagenes: nuevas } : sp);
       setProductos(prev => prev.map(p => p.id === selectedProduct.id ? { ...p, imagenes: nuevas } : p));
     } catch (e) {
       Alert.alert('Error', 'No se pudieron agregar imágenes');
@@ -191,7 +193,7 @@ function VisualCatalogAdmin() {
     try {
       const res = await eliminarImagenGaleriaAdmin(selectedProduct.id, img);
       const nuevas: string[] = res?.imagenes ?? (selectedProduct.imagenes || []).filter(u => u !== img);
-      setSelectedProduct(sp => sp ? { ...sp, imagenes: nuevas } : sp);
+      setSelectedProduct((sp: ProductoCatalogoAdmin | null) => sp ? { ...sp, imagenes: nuevas } : sp);
       setProductos(prev => prev.map(p => p.id === selectedProduct.id ? { ...p, imagenes: nuevas } : p));
     } catch (e) {
       Alert.alert('Error', 'No se pudo eliminar la imagen');
@@ -239,9 +241,11 @@ function VisualCatalogAdmin() {
   return (
     <View style={styles.container}>
       <View style={styles.hero}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.push('/dashboard')}>
-          <Text style={{ color: '#fff', fontWeight: '700' }}>{'< Volver'}</Text>
-        </TouchableOpacity>
+        <Link href="/dashboard" asChild>
+          <TouchableOpacity style={styles.backBtn}>
+            <Text style={{ color: '#fff', fontWeight: '700' }}>{'< Volver'}</Text>
+          </TouchableOpacity>
+        </Link>
         <Text style={styles.heroTitle}>Catálogo Visual (Admin)</Text>
         <Text style={styles.heroSubtitle}>Gestiona imágenes y detalles</Text>
         <TouchableOpacity style={styles.downloadBtn} onPress={descargarPDF}>
@@ -300,13 +304,13 @@ function VisualCatalogAdmin() {
               <Text style={styles.label}>Nombre</Text>
               <TextInput
                 value={selectedProduct.nombre}
-                onChangeText={(t) => setSelectedProduct(sp => sp ? { ...sp, nombre: t } : sp)}
+            onChangeText={(t) => setSelectedProduct((sp: ProductoCatalogoAdmin | null) => sp ? { ...sp, nombre: t } : sp)}
                 style={styles.input}
               />
               <Text style={styles.label}>Descripción</Text>
               <TextInput
                 value={selectedProduct.descripcion || ''}
-                onChangeText={(t) => setSelectedProduct(sp => sp ? { ...sp, descripcion: t } : sp)}
+            onChangeText={(t) => setSelectedProduct((sp: ProductoCatalogoAdmin | null) => sp ? { ...sp, descripcion: t } : sp)}
                 style={[styles.input, { height: 80 }]}
                 multiline
               />

@@ -4,7 +4,7 @@
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
-const TARGET = process.env.TARGET_URL || 'https://mi-tienda-backend-o9i7.onrender.com';
+const TARGET = process.env.TARGET_URL || 'https://mi-tienda-backend-o9i7.onrender.com:8081';
 const PORT = process.env.PORT || 8084;
 
 const app = express();
@@ -31,8 +31,9 @@ app.use(
   createProxyMiddleware({
     target: TARGET,
     changeOrigin: true,
+    // Permitir certificados autofirmados en desarrollo
+    secure: false,
     ws: true,
-    secure: true,
     onProxyReq: (proxyReq, req, res) => {
       // Ensure JSON content type for POST bodies when the client didn't set it
       if (req.method === 'POST' && !proxyReq.getHeader('Content-Type')) {

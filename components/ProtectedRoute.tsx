@@ -8,18 +8,18 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, token, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (!isLoading && !token) {
       // Redirigir al login si no hay usuario autenticado
       router.replace('/auth/login');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [token, isLoading, router]);
 
-  // Mostrar loading mientras se verifica la autenticación
-  if (isLoading) {
+  // Mostrar loading solo si se está verificando y aún no hay usuario
+  if (isLoading && !token) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
@@ -28,8 +28,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
-  // Si no hay usuario, no renderizar nada (se redirigirá)
-  if (!isAuthenticated) {
+  // Si no hay token, no renderizar nada (se redirigirá)
+  if (!token) {
     return null;
   }
 

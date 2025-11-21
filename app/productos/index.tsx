@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, TextInput, Switch, Modal, Alert, Platform } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, TextInput, Switch, Modal, Alert, Platform, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import styled from 'styled-components/native';
 import { productosService, ProductoAdmin, calcularPrecioFinal, calcularPrecioTemporal, STOCK_CRITICO } from '../../services/productosService';
@@ -400,25 +400,26 @@ export default function ProductosScreen() {
                 </Text>
               </TouchableOpacity>
               {!collapsed[g.categoriaId] && (
-                <View>
-                  {/* Encabezado de columnas */}
-                  <View style={{ flexDirection: 'row', paddingVertical: 8, paddingHorizontal: 8, backgroundColor: COLORS.primary, borderRadius: 8, marginBottom: 8 }}>
-                    <Text style={{ flex: 2, fontWeight: '600', color: COLORS.headerText }}>Producto</Text>
-                    <Text style={{ width: 80, fontWeight: '600', color: COLORS.headerText, textAlign: 'center' }}>Stock</Text>
-                    <Text style={{ width: 120, fontWeight: '600', color: COLORS.headerText, textAlign: 'right' }}>Precio costo</Text>
-                    <Text style={{ width: 160, fontWeight: '600', color: COLORS.headerText }}>% Ganancia</Text>
-                    <Text style={{ width: 140, fontWeight: '600', color: COLORS.headerText, textAlign: 'right' }}>Precio final</Text>
-                    <Text style={{ width: 100, fontWeight: '600', color: COLORS.headerText, textAlign: 'center' }}>Estado</Text>
-                    <Text style={{ width: 120, fontWeight: '600', color: COLORS.headerText }}>Acciones</Text>
-                  </View>
-                  {g.items.map(p => (
-                    <Card key={p.id}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        {/* Producto */}
-                        <View style={{ flex: 2, paddingRight: 8 }}>
-                          <Text style={{ fontWeight: '600' }}>{p.nombre}</Text>
-                          <Text style={{ color: '#666' }}>SKU: {p.sku || '-'}</Text>
-                        </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={true} contentContainerStyle={{ minWidth: 1080 }}>
+                  <View style={{ flex: 1 }}>
+                    {/* Encabezado de columnas */}
+                    <View style={{ flexDirection: 'row', paddingVertical: 8, paddingHorizontal: 8, backgroundColor: COLORS.primary, borderRadius: 8, marginBottom: 8 }}>
+                      <Text style={{ minWidth: 300, fontWeight: '600', color: COLORS.headerText }}>Producto</Text>
+                      <Text style={{ width: 80, fontWeight: '600', color: COLORS.headerText, textAlign: 'center' }}>Stock</Text>
+                      <Text style={{ width: 120, fontWeight: '600', color: COLORS.headerText, textAlign: 'right' }}>Precio costo</Text>
+                      <Text style={{ width: 160, fontWeight: '600', color: COLORS.headerText }}>% Ganancia</Text>
+                      <Text style={{ width: 140, fontWeight: '600', color: COLORS.headerText, textAlign: 'right' }}>Precio final</Text>
+                      <Text style={{ width: 100, fontWeight: '600', color: COLORS.headerText, textAlign: 'center' }}>Estado</Text>
+                      <Text style={{ width: 120, fontWeight: '600', color: COLORS.headerText }}>Acciones</Text>
+                    </View>
+                    {g.items.map(p => (
+                      <Card key={p.id}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          {/* Producto */}
+                          <View style={{ minWidth: 300, paddingRight: 8 }}>
+                            <Text style={{ fontWeight: '600' }}>{p.nombre}</Text>
+                            <Text style={{ color: '#666' }}>SKU: {p.sku || '-'}</Text>
+                          </View>
 
                         {/* Stock */}
                         <View style={{ width: 80, alignItems: 'center' }}>
@@ -503,16 +504,17 @@ export default function ProductosScreen() {
                           </View>
                         </View>
 
-                        {/* Acciones */}
-                        <View style={{ width: 120, flexDirection: 'row', justifyContent: 'flex-start' }}>
-                          <TouchableOpacity onPress={() => abrirModalEditar(p)} style={{ backgroundColor: '#2196f3', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8 }}>
-                            <Text style={{ color: '#fff' }}>Editar</Text>
-                          </TouchableOpacity>
+                          {/* Acciones */}
+                          <View style={{ width: 120, flexDirection: 'row', justifyContent: 'flex-start' }}>
+                            <TouchableOpacity onPress={() => abrirModalEditar(p)} style={{ backgroundColor: '#2196f3', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8 }}>
+                              <Text style={{ color: '#fff' }}>Editar</Text>
+                            </TouchableOpacity>
+                          </View>
                         </View>
-                      </View>
-                    </Card>
-                  ))}
-                </View>
+                      </Card>
+                    ))}
+                  </View>
+                </ScrollView>
               )}
             </View>
           )}

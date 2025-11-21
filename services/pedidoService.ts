@@ -1,4 +1,5 @@
 import { API_CONFIG } from '../config/api.js';
+import { Platform } from 'react-native';
 import { fetchWithTimeout } from './httpUtils';
 
 export interface PedidoItemPayload {
@@ -45,7 +46,7 @@ export const pedidoService = {
   registrarPedidoConsumidor: async (
     payload: PedidoConsumidorPayload
   ): Promise<PedidoConsumidorResponse> => {
-    const BASE = (API_CONFIG?.BASE_URL || 'https://mi-tienda-backend-o9i7.onrender.com').trim();
+    const BASE = API_CONFIG.BASE_URL;
     const url = `${BASE}/usuarios/pedido-consumidor`;
 
     const items = buildItems(payload.items);
