@@ -1,3 +1,23 @@
+import { useRouter, Link } from 'expo-router';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Dimensions, FlatList, Image, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import ProtectedRoute from '../../components/ProtectedRoute';
+import { API_CONFIG } from '../../config/api.js';
+import {
+  ProductoCatalogoAdmin,
+  actualizarDescripcionCatalogo,
+  actualizarImagenPrincipalAdmin,
+  agregarImagenesGaleriaAdmin,
+  eliminarImagenGaleriaAdmin,
+  eliminarImagenPrincipalAdmin,
+  getCatalogProductsAdmin,
+  productService,
+  toggleDestacadoAdmin
+} from '../../services/catalogoService';
+
+const { width } = Dimensions.get('window');
+const CARD_W = (width - 48) / 2;
+const HERO_H = 150;
 
 function resolveImageUrl(input?: string | null): string {
   if (!input) return '';
@@ -189,7 +209,7 @@ function VisualCatalogAdmin() {
   };
 
   const renderItem = ({ item }: { item: ProductoCatalogoAdmin }) => (
-    <View style={[styles.card, { width: CARD_W }]}>
+    <View style={[styles.card, { width: CARD_W }]}> 
       <TouchableOpacity onPress={() => openModal(item)}>
         {item.imagen_principal ? (
           <Image source={{ uri: resolveImageUrl(item.imagen_principal) }} style={styles.cardImage} />
@@ -207,22 +227,11 @@ function VisualCatalogAdmin() {
           <Text style={styles.cardStock}>Stock: {item.stock ?? 0}</Text>
         </View>
         <View style={styles.cardButtonsRow}>
-          <TouchableOpacity
-            style={[styles.btn, item.destacado ? styles.btnYellow : styles.btnLight, styles.btnFlex]}
-            onPress={() => handleToggleDestacado(item)}
-          >
-            <Text
-              style={[styles.btnText, item.destacado ? styles.btnTextDark : null, styles.btnInnerText]}
-            >
-              {item.destacado ? 'Quitar destacado' : 'Destacar'}
-            </Text>
+          <TouchableOpacity style={[styles.btn, item.destacado ? styles.btnYellow : styles.btnLight]} onPress={() => handleToggleDestacado(item)}>
+            <Text style={[styles.btnText, item.destacado ? styles.btnTextDark : styles.btnText]}>{item.destacado ? 'Quitar destacado' : 'Destacar'}</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.btn, styles.btnPrimary, styles.btnFlex]}
-            onPress={() => openModal(item)}
-          >
-            <Text style={[styles.btnText, styles.btnInnerText]}>Imágenes</Text>
+          <TouchableOpacity style={[styles.btn, styles.btnPrimary]} onPress={() => openModal(item)}>
+            <Text style={styles.btnText}>Imágenes</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -295,13 +304,13 @@ function VisualCatalogAdmin() {
               <Text style={styles.label}>Nombre</Text>
               <TextInput
                 value={selectedProduct.nombre}
-                onChangeText={(t) => setSelectedProduct((sp: ProductoCatalogoAdmin | null) => sp ? { ...sp, nombre: t } : sp)}
+            onChangeText={(t) => setSelectedProduct((sp: ProductoCatalogoAdmin | null) => sp ? { ...sp, nombre: t } : sp)}
                 style={styles.input}
               />
               <Text style={styles.label}>Descripción</Text>
               <TextInput
                 value={selectedProduct.descripcion || ''}
-                onChangeText={(t) => setSelectedProduct((sp: ProductoCatalogoAdmin | null) => sp ? { ...sp, descripcion: t } : sp)}
+            onChangeText={(t) => setSelectedProduct((sp: ProductoCatalogoAdmin | null) => sp ? { ...sp, descripcion: t } : sp)}
                 style={[styles.input, { height: 80 }]}
                 multiline
               />
@@ -317,32 +326,27 @@ function VisualCatalogAdmin() {
                 <View style={[styles.principalImage, styles.cardImagePlaceholder]}><Text>Sin imagen</Text></View>
               )}
               {Platform.OS === 'web' ? (
-                <View style={[styles.uploadRow, styles.uploadRowColumn]}>
-                  <View style={styles.uploadButtonsRow}>
-                    <TouchableOpacity
-                      style={[styles.btn, styles.btnPrimary, styles.uploadBtn, { opacity: (!pendingPrincipalFile || updatingPrincipal) ? 0.7 : 1 }]}
-                      disabled={!pendingPrincipalFile || updatingPrincipal}
-                      onPress={() => pendingPrincipalFile && handleUpdatePrincipal(pendingPrincipalFile)}
-                    >
-                      <Text style={styles.btnText}>{updatingPrincipal ? 'Actualizando…' : 'Actualizar principal'}</Text>
+                <View style={styles.uploadRow}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e: any) => {
+                      const f = e?.target?.files?.[0];
+                      if (f) setPendingPrincipalFile(f);
+                    }}
+                  />
+                  <TouchableOpacity
+                    style={[styles.btn, styles.btnPrimary, { marginLeft: 8, opacity: (!pendingPrincipalFile || updatingPrincipal) ? 0.7 : 1 }]}
+                    disabled={!pendingPrincipalFile || updatingPrincipal}
+                    onPress={() => pendingPrincipalFile && handleUpdatePrincipal(pendingPrincipalFile)}
+                  >
+                    <Text style={styles.btnText}>{updatingPrincipal ? 'Actualizando…' : 'Actualizar principal'}</Text>
+                  </TouchableOpacity>
+                  {selectedProduct.imagen_principal && (
+                    <TouchableOpacity style={[styles.btn, styles.btnDanger]} onPress={handleDeletePrincipal}>
+                      <Text style={styles.btnText}>Eliminar principal</Text>
                     </TouchableOpacity>
-                    {selectedProduct.imagen_principal && (
-                      <TouchableOpacity style={[styles.btn, styles.btnDanger, styles.uploadBtn]} onPress={handleDeletePrincipal}>
-                        <Text style={styles.btnText}>Eliminar principal</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                  <View style={[styles.uploadItem, styles.uploadInputWrapper]}>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e: any) => {
-                        const f = e?.target?.files?.[0];
-                        if (f) setPendingPrincipalFile(f);
-                      }}
-                      style={{ width: '100%', boxSizing: 'border-box' }}
-                    />
-                  </View>
+                  )}
                 </View>
               ) : (
                 <Text style={{ color: '#666' }}>Actualización de imagen disponible en la web.</Text>
@@ -361,37 +365,31 @@ function VisualCatalogAdmin() {
                 ))}
               </View>
               {Platform.OS === 'web' ? (
-                <View style={styles.uploadRowGallery}>
-                  <View style={styles.uploadItem}>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={(e: any) => {
-                        const fl = e?.target?.files;
-                        if (fl && fl.length) {
-                          const arr: (File | Blob)[] = [];
-                          for (let i = 0; i < fl.length; i++) {
-                            const it = fl.item(i);
-                            if (it) arr.push(it);
-                          }
-                          setPendingGalleryFiles(arr);
-                        } else {
-                          setPendingGalleryFiles([]);
+                <View style={styles.uploadRow}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e: any) => {
+                      const fl = e?.target?.files;
+                      if (fl && fl.length) {
+                        const arr: (File | Blob)[] = [];
+                        for (let i = 0; i < fl.length; i++) {
+                          const it = fl.item(i);
+                          if (it) arr.push(it);
                         }
-                      }}
-                    />
-                  </View>
+                        setPendingGalleryFiles(arr);
+                      } else {
+                        setPendingGalleryFiles([]);
+                      }
+                    }}
+                  />
                   {pendingGalleryFiles.length > 0 ? (
-                    <View style={styles.uploadInfo}>
-                      <Text style={styles.uploadInfoText}>Seleccionadas: {pendingGalleryFiles.length}</Text>
-                    </View>
+                    <Text style={{ marginLeft: 8 }}>Seleccionadas: {pendingGalleryFiles.length}</Text>
                   ) : (
-                    <View style={styles.uploadInfoBelow}>
-                      <Text style={styles.uploadInfoText}>No seleccionaste imágenes aún</Text>
-                    </View>
+                    <Text style={{ marginLeft: 8, color: '#666' }}>No seleccionaste imágenes aún</Text>
                   )}
-                </View>
+              </View>
               ) : null}
             </View>
           )}
@@ -438,10 +436,8 @@ const styles = StyleSheet.create({
   cardPrice: { fontSize: 16, fontWeight: '700', color: '#7b1fa2' },
   cardStock: { fontSize: 12, color: '#6c757d' },
   cardButtonsRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  btn: { paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, minHeight: 40 },
-  btnFlex: { flexBasis: '48%', alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  btnText: { color: '#fff', fontWeight: '400', textAlign: 'center' },
-  btnInnerText: { paddingHorizontal: 4 },
+  btn: { paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8 },
+  btnText: { color: '#fff', fontWeight: '700' },
   btnPrimary: { backgroundColor: '#7b1fa2' },
   btnLight: { backgroundColor: '#607D8B' },
   btnYellow: { backgroundColor: '#FFC107' },
@@ -454,13 +450,6 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 16, fontWeight: '800', marginBottom: 8 },
   principalImage: { width: '100%', height: 180, borderRadius: 12 },
   uploadRow: { marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  uploadItem: { marginRight: 8, minWidth: 0 },
-  uploadBtn: { marginLeft: 0 },
-  uploadButtonsRow: { flexDirection: 'row', marginTop: 8, gap: 8, flexWrap: 'wrap', marginBottom: 12 },
-  uploadRowColumn: { flexDirection: 'column', alignItems: 'flex-start' },
-  uploadInputWrapper: { width: '100%', },
-  uploadInfo: { marginLeft: 8, flexShrink: 1 },
-  uploadInfoText: { color: '#666', flexShrink: 1 },
   galleryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   galleryItem: { width: (width - 48) / 3, },
   galleryImage: { width: '100%', height: 90, borderRadius: 8 },
