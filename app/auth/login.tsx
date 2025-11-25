@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import { router, Redirect } from 'expo-router';
+import React, { useState, useEffect } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -16,7 +16,7 @@ import {
   View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Icon from "react-native-vector-icons/Ionicons";
+// Eliminado import de react-native-vector-icons; usamos Ionicons de Expo
 import { useAuth } from '../../contexts/AuthContext';
 import { checkNetworkConnection, handleNetworkError } from '../../utils/networkUtils';
 
@@ -24,7 +24,7 @@ import { checkNetworkConnection, handleNetworkError } from '../../utils/networkU
 const { width, height } = Dimensions.get('window');
 
 const Login = () => {
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const [register, setRegister] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
@@ -71,13 +71,17 @@ const Login = () => {
       
       // Usar el método login del contexto
       await login(formData.email, formData.password);
-      
-      // Mostrar mensaje de éxito
-      // console.log('✅ Login exitoso');
+
+      // Navegar inmediatamente al panel tras login exitoso
+      try {
+        router.replace('/dashboard');
+        console.log('[Login] redirect → /dashboard');
+      } catch (e) {
+        console.log('[Login] router.replace error', e);
+      }
+
       // Reset form
       setFormData({ email: '', password: '' });
-      // Navegar a la pantalla principal
-      router.replace('/dashboard');
     } catch (error: any) {
       // console.error('❌ Error en login:', error);
       const errorMessage = handleNetworkError(error);
@@ -96,6 +100,18 @@ const Login = () => {
       setIsLoading(false);
     }
   };
+
+  // Redirigir automáticamente al Panel de Control cuando el usuario esté autenticado
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/dashboard');
+    }
+  }, [isAuthenticated]);
+
+  // Redirección inmediata usando componente declarativo
+  if (isAuthenticated) {
+    return <Redirect href="/dashboard" />;
+  }
 
   const handleForgotPassword = () => {
     Alert.alert(
@@ -231,7 +247,7 @@ const Login = () => {
                   router.push("/auth/registerAdmin");
                 }}
               >
-                <Icon name="person-circle-outline" size={20} color="#4c54afff" />
+                <Ionicons name="person-circle-outline" size={20} color="#4c54afff" />
                 <Text style={{ color: "#4c54afff", fontWeight: "600", fontSize: 16, marginLeft: 6 }}>
                   Admin
                 </Text>
@@ -254,7 +270,7 @@ const Login = () => {
                   router.push("/auth/registerRevendedor");
                 }}
               >
-                <Icon name="business-outline" size={20} color="#4caf50" />
+                <Ionicons name="business-outline" size={20} color="#4caf50" />
                 <Text style={{ color: "#4caf50", fontWeight: "600", fontSize: 16, marginLeft: 6 }}>
                   Revendedor
                 </Text>

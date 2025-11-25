@@ -2,14 +2,16 @@ import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { safeAsyncStorage } from './storageUtils';
 import { fetchWithTimeout } from './httpUtils';
 import { API_CONFIG } from '../config/api.js';
+import { Platform } from 'react-native';
 
+// Configuración base de la API
 // Configuración base de la API
 const API_BASE_URL = API_CONFIG.BASE_URL;
 
 // Crear instancia de axios para categorías
 const categoriasClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: API_CONFIG.TIMEOUT || 30000,
 });
 
 // Interceptor para agregar token a las peticiones (omitir si x-skip-auth)
@@ -91,6 +93,10 @@ export const categoriasService = {
       });
       
       if (!response.ok) {
+        // Si el backend devuelve 404/401, degradar con lista vacía
+        if (response.status === 404 || response.status === 401) {
+          return [];
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
@@ -98,7 +104,8 @@ export const categoriasService = {
       return categorias.filter(cat => cat.activo); // Solo categorías activas
     } catch (error) {
       console.error('Error al obtener categorías:', error);
-      throw error;
+      // Degradar silenciosamente si fallo de red o CORS: devolver lista vacía
+      return [];
     }
   },
 

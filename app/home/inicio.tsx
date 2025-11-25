@@ -1,3 +1,5 @@
+// Debug: confirmar carga del módulo de Inicio
+console.log('[InicioScreen] module loaded');
 import { router } from "expo-router";
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from "react-native";
@@ -164,7 +166,7 @@ const ActionsGrid = styled.View`
   padding: 0 20px;
   margin-bottom: 20px;
 `;
-const ActionCard = styled.TouchableOpacity<{bgColor: string}>`
+const ActionCard = styled.TouchableOpacity<{ bgColor: string }>`
   flex: 1;
   height: 100px;
   background-color: ${props => props.bgColor};
@@ -193,7 +195,7 @@ const ActionSubtitle = styled.Text`
   font-size: 11px;
   text-align: center;
 `;
-const CategoryCard = styled.TouchableOpacity<{bgColor: string}>`
+const CategoryCard = styled.TouchableOpacity<{ bgColor: string }>`
   width: 48%;
   height: 80px;
   background-color: ${props => props.bgColor};
@@ -332,6 +334,7 @@ const formatPrice = (price: number | string) => {
 };
 
 export default function InicioScreen() {
+  console.log('[InicioScreen] render start');
   const [products, setProducts] = useState<Product[]>([]);
   const [featured, setFeatured] = useState<Product[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -341,46 +344,44 @@ export default function InicioScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [currentFeaturedIndex, setCurrentFeaturedIndex] = useState(0);
   const featuredScrollRef = React.useRef<FlatList>(null);
-  const isMountedRef = React.useRef(true);
-
   useEffect(() => {
-    const fetchAll = async () => {
-      try {
-        if (!isMountedRef.current) return;
-        setLoading(true);
-        setLoadingCategories(true);
-        
-        // Cargar productos y categorías en paralelo
-        const [pub, dest, cats] = await Promise.all([
-          productService.getPublicProducts().catch(() => []),
-          productService.getFeaturedProducts().catch(() => []),
-          categoriasService.obtenerTodas().catch(() => [])
-        ]);
-        
-        if (!isMountedRef.current) return;
-        setProducts(pub);
-        setFeatured(dest && dest.length ? dest : pub.slice(0, 10));
-        setCategorias(cats);
-      } catch (e) {
-        console.error('❌ Error al cargar datos:', e);
-        if (!isMountedRef.current) return;
+    console.log('[InicioScreen] useEffect: cargar datos');
+    let active = true;
+    setLoading(true);
+    setLoadingCategories(true);
+    Promise.all([
+      productService.getPublicProducts(),
+      productService.getFeaturedProducts(),
+      categoriasService.obtenerTodas()
+    ])
+      .then(([pub, dest, cats]) => {
+        if (!active) return;
+        setProducts(pub || []);
+        setFeatured(dest && dest.length ? dest : (pub || []).slice(0, 10));
+        setCategorias(cats || []);
+      })
+      .catch((e) => {
+        console.warn('Error al cargar datos:', e);
+        if (!active) return;
         setProducts([]);
         setFeatured([]);
         setCategorias([]);
-      } finally {
-        if (!isMountedRef.current) return;
+      })
+      .finally(() => {
+        console.log('[InicioScreen] datos cargados, setLoading(false)');
+        if (!active) return;
         setLoading(false);
         setLoadingCategories(false);
-      }
+      });
+    return () => {
+      active = false;
     };
-    fetchAll();
   }, []);
 
   // Auto-scroll para productos destacados
   useEffect(() => {
     if (featured.length > 1) {
       const interval = setInterval(() => {
-        if (!isMountedRef.current) return;
         setCurrentFeaturedIndex(prevIndex => {
           const nextIndex = (prevIndex + 1) % featured.length;
           featuredScrollRef.current?.scrollToIndex({
@@ -395,12 +396,7 @@ export default function InicioScreen() {
     }
   }, [featured.length]);
 
-  // Cleanup effect
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
+  // Cleanup effect eliminado (control local con flag en efecto de carga)
 
   const categories = useMemo(() => {
     const map = new Map<string, number>();
@@ -425,13 +421,13 @@ export default function InicioScreen() {
       { name: 'Herramientas', icon: '🔧', color: '#FECA57' },
       { name: 'Belleza', icon: '💄', color: '#FF9FF3' },
     ];
-    
+
     // Si tenemos categorías reales del backend, las usamos
     if (categorias.length > 0) {
       return categorias.slice(0, 6).map((categoria, index) => {
         const productCount = products.filter(p => p.category === categoria.nombre).length;
         const colorInfo = categoryColors.find(c => c.name === categoria.nombre) || categoryColors[index % categoryColors.length];
-        
+
         return {
           id: categoria.id,
           name: categoria.nombre,
@@ -441,7 +437,7 @@ export default function InicioScreen() {
         };
       });
     }
-    
+
     // Si tenemos productos pero no categorías del backend, usar categorías de productos
     if (categories.length > 0) {
       return categories.slice(0, 6).map((cat, index) => ({
@@ -451,7 +447,7 @@ export default function InicioScreen() {
         color: categoryColors[index % categoryColors.length].color
       }));
     }
-    
+
     // Si no, mostramos las categorías por defecto
     return categoryColors.map((cat, index) => ({ ...cat, count: 0 }));
   };
@@ -485,7 +481,7 @@ export default function InicioScreen() {
           <WelcomeMessage>Descubre productos increíbles en tu tienda favorita</WelcomeMessage>
         </WelcomeContainer>
       </Header>
-      
+
       {/* Productos Destacados - Movido arriba con diseño moderno */}
       <Section>
         <SectionHeader>
@@ -493,7 +489,7 @@ export default function InicioScreen() {
           {loading ? <ActivityIndicator size="small" color="#2196f3" /> : <View />}
         </SectionHeader>
 
-        
+
         <FlatList
           ref={featuredScrollRef}
           data={filteredTrending}
@@ -537,7 +533,6 @@ export default function InicioScreen() {
           ListEmptyComponent={!loading ? (
             <View style={{ padding: 20, alignItems: 'center' }}>
               <Text style={{ color: '#666', fontSize: 16 }}>🔍 No hay productos destacados</Text>
-              <Text style={{ color: '#999', fontSize: 14, marginTop: 4 }}>Revisa la conexión con el servidor</Text>
             </View>
           ) : null}
         />
@@ -588,11 +583,11 @@ export default function InicioScreen() {
           )}
         </SectionHeader>
       </Section>
-      
+
       <CategoriesGrid>
         {getCategoryCards().map((category, index) => (
-          <CategoryCard 
-            key={category.name || index} 
+          <CategoryCard
+            key={category.name || index}
             bgColor={category.color}
             onPress={() => handleCategoryPress(category.name)}
           >
@@ -607,11 +602,11 @@ export default function InicioScreen() {
 
       {/* Estadísticas compactas */}
       <View style={{ padding: 20, paddingTop: 10 }}>
-        <View style={{ 
-          flexDirection: 'row', 
-          justifyContent: 'space-around', 
-          backgroundColor: 'white', 
-          borderRadius: 12, 
+        <View style={{
+          flexDirection: 'row',
+          justifyContent: 'space-around',
+          backgroundColor: 'white',
+          borderRadius: 12,
           padding: 16,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 2 },

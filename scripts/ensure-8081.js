@@ -10,7 +10,8 @@ function findAndKill8081Windows() {
         const parts = line.trim().split(/\s+/);
         const state = parts[3] || parts[2] || '';
         const pid = parts[parts.length - 1];
-        if (/LISTEN/i.test(state) && pid && /^\d+$/.test(pid)) {
+        // Windows uses 'LISTENING' as the state label
+        if (/(LISTEN|LISTENING)/i.test(state) && pid && /^\d+$/.test(pid)) {
           pids.add(pid);
         }
       }
@@ -27,7 +28,7 @@ async function ensureAndStart() {
   if (process.platform === 'win32') {
     await findAndKill8081Windows();
   }
-  const child = spawn('npx', ['expo', 'start', '--web', '--port', '8081'], {
+  const child = spawn('npx', ['expo', 'start', '--web', '--port', '8081', '--clear', '--non-interactive'], {
     stdio: 'inherit',
     shell: true,
   });
