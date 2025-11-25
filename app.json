@@ -9,15 +9,17 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.uner.Tienda"
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
+      "package": "com.uner.Tienda",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.Tienda"
+      "edgeToEdgeEnabled": true
     },
     "web": {
       "bundler": "metro",
@@ -25,6 +27,16 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#ffffff",
+          "sounds": [
+            "./assets/sounds/notification_sound.wav"
+          ]
+        }
+      ],
       [
         "expo-build-properties",
         {
@@ -47,6 +59,11 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "b9fc8a7e-e7ae-42a4-a403-ce3b95f2cae2"
+      }
     }
   }
 }
