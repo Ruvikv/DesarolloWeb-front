@@ -22,60 +22,6 @@ async function getPushToken() {
   }
 }
 
-// async function registerForPushNotificationsAsync() {
-//   let token;
-
-//   if (Device.isDevice) {
-//     const { status: existingStatus } = await Notifications.getPermissionsAsync();
-//     let finalStatus = existingStatus;
-
-//     if (existingStatus !== 'granted') {
-//       const { status } = await Notifications.requestPermissionsAsync();
-//       finalStatus = status;
-//     }
-
-//     if (finalStatus !== 'granted') {
-//       alert('No se concedieron permisos para notificaciones push.');
-//       return
-//     }
-
-//     token = (await Notifications.getExpoPushTokenAsync()).data;
-//     console.log("Token de notificación:", token);
-//   } else {
-//     alert ('Necesitas un dispositivo físico para recibir alertas.')
-//   }
-
-//   if (Platform.OS === 'android') {
-//     await Notifications.setNotificationChannelAsync('default', {
-//       name: 'default',
-//       importance: Notifications.AndroidImportance.MAX,
-//       vibrationPattern: [0, 250, 250, 250],
-//       lightColor: '#FF231F7C',
-//     });
-//   }
-//   console.log("entró a register")
-
-//   return token;
-// }
-async function registerForPushNotificationsAsync() {
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-
-  if (finalStatus !== 'granted') {
-    alert('Failed to get push token for push notification!');
-    return;
-  }
-
-  const token = (await Notifications.getExpoPushTokenAsync()).data;
-  console.log(token);
-  return token;
-}
-
 async function requestPermissionAsync() {
   const { status } = await Notifications.requestPermissionsAsync();
   console.log("Permisos de notificación:", status);
@@ -101,7 +47,7 @@ async function testNotification() {
         title: 'Hola!',
         body: 'Esta es una notificación de prueba. ⌚',
       },
-      trigger: { seconds: 20 },
+      trigger: { seconds: 40 },
     });
     console.log("Id de la notifiación", id)
   } catch (e) {
@@ -247,10 +193,8 @@ export default function RootLayout() {
   }, [])
 
   useEffect(() => {
-    registerForPushNotificationsAsync().then(token => {
-      console.log('token', token)
-    })
-  })
+    testNotification();
+  }, [])
 
   useEffect(() => {
     getPushToken()
@@ -276,21 +220,6 @@ export default function RootLayout() {
     <NotificationProvider>
       <AuthProvider>
         <CartProvider>
-                  <View style={{ padding: 20 }}>
-            <TouchableOpacity
-              onPress={testNotification}
-              style={{
-                backgroundColor: "#7b1fa2",
-                padding: 12,
-                borderRadius: 8,
-                marginBottom: 10,
-              }}
-            >
-              <Text style={{ color: "#fff", textAlign: "center", fontWeight: "bold" }}>
-                Probar notificación - Token {token}
-              </Text>
-            </TouchableOpacity>
-          </View>
           <DrawerLayout />
         </CartProvider>
       </AuthProvider>
