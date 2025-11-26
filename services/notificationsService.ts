@@ -1,5 +1,5 @@
-import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 
 type AnyData = Record<string, any> | undefined;
 
@@ -36,19 +36,7 @@ export async function ensureDefaultSchedules(): Promise<void> {
   try {
     // Evitar duplicados
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-    const hasDaily = scheduled?.some((req) => ((req?.content?.data as AnyData)?.tag) === 'daily-stock');
     const hasWeekly = scheduled?.some((req) => ((req?.content?.data as AnyData)?.tag) === 'weekly-review');
-
-    if (!hasDaily) {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Stock crítico',
-          body: 'Revisa productos con stock bajo en Estadísticas.',
-          data: { tag: 'daily-stock', route: '/estadisticas' },
-        },
-        trigger: { hour: 9, minute: 0, repeats: true },
-      });
-    }
 
     if (!hasWeekly) {
       // Semana: lunes 10:00. En plataformas que soportan CalendarTrigger con weekday.
@@ -62,7 +50,7 @@ export async function ensureDefaultSchedules(): Promise<void> {
         content: {
           title: 'Recordatorio semanal',
           body: 'Revisa las estadísticas de la semana.',
-          data: { tag: 'weekly-review', route: '/dashboard' },
+          data: { tag: 'weekly-review', route: '/estadisticas' },
         },
         trigger: calendarTrigger,
       });
@@ -90,4 +78,3 @@ export async function notifyOperationSuccess(message?: string): Promise<void> {
     console.warn('[notifications] success notify error:', e);
   }
 }
-

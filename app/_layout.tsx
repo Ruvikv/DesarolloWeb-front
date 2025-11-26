@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { CartProvider, useCart } from "../contexts/CartContext";
 import { SettingsProvider, useHeaderTheme, useThemeColors } from "../contexts/SettingsContext";
 import { configureNotifications, ensureDefaultSchedules } from "../services/notificationsService";
+import { registerStockBackgroundTask } from "../tasks/stockBackground";
 import { useResponsive } from "../utils/responsiveUtils";
 
 function BackButton({ color = '#000' }: { color?: string }) {
@@ -208,6 +209,7 @@ export default function RootLayout() {
       const granted = await configureNotifications();
       if (granted) {
         await ensureDefaultSchedules();
+        await registerStockBackgroundTask();
       }
     })();
   }, []);
