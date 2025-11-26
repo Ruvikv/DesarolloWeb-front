@@ -26,14 +26,14 @@ const Card: React.FC<CardProps> = ({ title, subtitle, icon, onPress, gradient, a
   const subtitleSize = isMobile ? 10 : 12;
   const actionButtonSize = isMobile ? 12 : 14;
   const cardHeight = isMobile ? 140 : isTablet ? 160 : 180;
-  
+
   return (
-    <TouchableOpacity 
-      style={[styles.cardContainer, { 
+    <TouchableOpacity
+      style={[styles.cardContainer, {
         width: isMobile ? '100%' : isTablet ? '48%' : CARD_SIZE,
-        marginBottom: isMobile ? 16 : 24 
-      }]} 
-      onPress={onPress} 
+        marginBottom: isMobile ? 16 : 24
+      }]}
+      onPress={onPress}
       activeOpacity={0.8}
     >
       <LinearGradient colors={gradient} style={[styles.cardGradient, { height: cardHeight }]}>
@@ -74,7 +74,7 @@ const Dashboard = () => {
   // Mostrar loading solo si se está verificando y aún no hay token
   if (isLoading && !token) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: themeColors.background }] }>
+      <View style={[styles.loadingContainer, { backgroundColor: themeColors.background }]}>
         <ActivityIndicator size="large" color={themeColors.accent} />
         <Text style={[styles.loadingText, { color: themeColors.textSecondary }]}>Verificando autenticación...</Text>
       </View>
@@ -118,6 +118,22 @@ const Dashboard = () => {
       gradient: ['#ff512f', '#dd2476'] as const,
       actionLabel: 'Gestionar',
       onPress: () => router.push('/pedidos/admin' as Href<'/pedidos/admin'>)
+    },
+    {
+      title: 'Compras',
+      subtitle: 'Registro de compras',
+      icon: 'cart-outline',
+      gradient: ['#f093fb', '#f5576c'] as const,
+      actionLabel: 'Gestionar',
+      onPress: () => router.push('/compras' as Href<'/compras'>),
+    },
+    {
+      title: 'Estadísticas',
+      subtitle: 'Resumen económico',
+      icon: 'bar-chart-outline',
+      gradient: ['#667eea', '#764ba2'] as const,
+      actionLabel: 'Ver resumen',
+      onPress: () => router.push('/estadisticas' as Href<'/estadisticas'>),
     },
     {
       title: 'Ventas',

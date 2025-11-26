@@ -40,7 +40,7 @@ export default function VisualCatalog() {
     const heroHeight = isMobile ? 140 : isTablet ? 160 : 180;
     const titleSize = isMobile ? 24 : isTablet ? 26 : 28;
     const subtitleSize = isMobile ? 14 : 16;
-    
+
     return (
       <View style={[styles.hero, { height: heroHeight }]}>
         <Text style={[styles.heroTitle, { fontSize: titleSize }]}>Catálogo Visual</Text>
@@ -77,9 +77,9 @@ export default function VisualCatalog() {
     const cardPriceSize = isMobile ? 14 : isTablet ? 15 : 16;
     const buttonTextSize = isMobile ? 12 : 14;
     const imageHeight = isMobile ? 110 : isTablet ? 120 : 130;
-    
+
     return (
-      <View style={[styles.card, { margin: 8, flex: 1, maxWidth: isMobile ? '100%' : isTablet ? '48%' : '32%' }]}>
+      <View style={[styles.card, { margin: 8, flex: 1, maxWidth: isMobile ? '48%' : isTablet ? '48%' : '32%' }]}>
         <TouchableOpacity onPress={() => handleProductPress(item.id)}>
           <Image source={{ uri: item.image }} style={[styles.cardImage, { height: imageHeight }]} />
         </TouchableOpacity>
@@ -96,9 +96,9 @@ export default function VisualCatalog() {
   };
 
   // Calcular número de columnas responsivas
-  const numColumns = isMobile ? 1 : isTablet ? 2 : 3;
-  const spacing = isMobile ? 12 : 16;
-  
+  const numColumns = isMobile ? 2 : isTablet ? 2 : 3;
+  const spacing = isMobile ? 8 : 16;
+
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
@@ -109,11 +109,11 @@ export default function VisualCatalog() {
         numColumns={numColumns}
         ListHeaderComponent={renderHero}
         contentContainerStyle={[
-          styles.content, 
+          styles.content,
           { paddingHorizontal: spacing }
         ]}
         columnWrapperStyle={numColumns > 1 ? [
-          styles.row, 
+          styles.row,
           { marginHorizontal: -spacing / 2 }
         ] : undefined} // Only pass columnWrapperStyle if numColumns > 1
         refreshControl={

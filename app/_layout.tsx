@@ -175,6 +175,9 @@ function DrawerLayout() {
       <Drawer.Screen name="pedidos/admin" options={{ title: "Atender pedidos", drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="ventas" options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="configuracion" options={{ drawerItemStyle: { display: 'none' } }} />
+      {/* Módulos administrativos - solo accesibles desde dashboard */}
+      <Drawer.Screen name="compras" options={{ title: "Compras", drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="estadisticas" options={{ title: "Estadísticas", drawerItemStyle: { display: 'none' } }} />
       {/* Pantalla de éxito de pedido (navegación interna, oculta del Drawer) */}
       <Drawer.Screen name="pedido/exito" options={{ drawerItemStyle: { display: 'none' } }} />
       {/* Rutas inexistentes eliminadas para evitar warnings de expo-router */}

@@ -1,7 +1,7 @@
-import React from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function PedidoExitoScreen() {
   const router = useRouter();
@@ -13,7 +13,8 @@ export default function PedidoExitoScreen() {
   const displayName = nombre ? nombre.toUpperCase() : '';
 
   const handleContinue = () => {
-    router.replace('/catalogo/visual');
+    console.log('Navegando a /catalogo/visual');
+    router.push('/catalogo/visual');
   };
 
   return (

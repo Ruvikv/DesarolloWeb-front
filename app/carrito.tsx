@@ -1,10 +1,12 @@
+import { useRouter } from 'expo-router';
 import React from 'react';
-import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View, Linking } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Linking, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCart } from '../contexts/CartContext';
 import { pedidoService } from '../services/pedidoService';
 
 export default function CarritoScreen() {
+  const router = useRouter();
   const { items, totalItems, totalPrice, increaseQty, decreaseQty, removeItem, clear } = useCart();
 
   const [nombre, setNombre] = React.useState('');
@@ -51,12 +53,20 @@ export default function CarritoScreen() {
 
       await pedidoService.registrarPedidoConsumidor(payload as any);
 
-      Alert.alert(
-        '¡Pedido registrado!','Te enviamos un correo con los detalles. Nos contactaremos para coordinar pago y envío.',
-        [
-          { text: 'OK', onPress: () => { clear(); setNombre(''); setEmail(''); setTelefono(''); setDireccion(''); } }
-        ]
-      );
+      // Navegar a pantalla de éxito inmediatamente
+      console.log('Navegando a /pedido/exito');
+      router.push({
+        pathname: '/pedido/exito',
+        params: { nombre: payload.nombre, email: payload.email }
+      });
+
+      // Limpiar carrito y formulario después de iniciar la navegación
+      clear();
+      setNombre('');
+      setEmail('');
+      setTelefono('');
+      setDireccion('');
+
     } catch (error: any) {
       const server = error?.response?.data;
       const backendMsg = server?.message || server?.error || server?.errors?.[0] || undefined;
@@ -81,7 +91,7 @@ export default function CarritoScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}> 
+      <View style={styles.header}>
         <Text style={styles.title}>Tu Carrito</Text>
         <Text style={styles.subtitle}>{totalItems} items</Text>
       </View>
