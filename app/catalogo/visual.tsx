@@ -1,13 +1,9 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, FlatList, Image, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Alert, FlatList, Image, RefreshControl, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useCart } from '../../contexts/CartContext';
 import { Product, productService } from '../../services/catalogoService';
-
-const { width } = Dimensions.get('window');
-const CARD_W = (width - 48) / 2; // similar al catálogo
-const HERO_H = 180;
+import { useResponsive } from '../../utils/responsiveUtils';
 
 export default function VisualCatalog() {
   const router = useRouter();
@@ -15,6 +11,7 @@ export default function VisualCatalog() {
   const [items, setItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const { isMobile, isTablet, deviceCategory } = useResponsive();
 
   const load = async () => {
     try {
@@ -39,18 +36,24 @@ export default function VisualCatalog() {
     setRefreshing(false);
   };
 
-  const renderHero = () => (
-    <View style={styles.hero}>
-      <Text style={styles.heroTitle}>Catálogo Visual</Text>
-      <Text style={styles.heroSubtitle}>Explora productos en una grilla moderna</Text>
-      {loading && (
-        <View style={styles.heroLoading}>
-          <ActivityIndicator color="#fff" size="small" />
-          <Text style={styles.heroLoadingText}>Cargando...</Text>
-        </View>
-      )}
-    </View>
-  );
+  const renderHero = () => {
+    const heroHeight = isMobile ? 140 : isTablet ? 160 : 180;
+    const titleSize = isMobile ? 24 : isTablet ? 26 : 28;
+    const subtitleSize = isMobile ? 14 : 16;
+    
+    return (
+      <View style={[styles.hero, { height: heroHeight }]}>
+        <Text style={[styles.heroTitle, { fontSize: titleSize }]}>Catálogo Visual</Text>
+        <Text style={[styles.heroSubtitle, { fontSize: subtitleSize }]}>Explora productos en una grilla moderna</Text>
+        {loading && (
+          <View style={styles.heroLoading}>
+            <ActivityIndicator color="#fff" size={isMobile ? "small" : "large"} />
+            <Text style={styles.heroLoadingText}>Cargando...</Text>
+          </View>
+        )}
+      </View>
+    );
+  };
 
   const handleProductPress = (productId: string) => {
     router.push({
@@ -68,37 +71,58 @@ export default function VisualCatalog() {
     );
   };
 
-  const renderItem = ({ item }: { item: Product }) => (
-    <View style={[styles.card, { width: CARD_W }]}> 
-      <TouchableOpacity onPress={() => handleProductPress(item.id)}>
-        <Image source={{ uri: item.image }} style={styles.cardImage} />
-      </TouchableOpacity>
-      <View style={styles.cardBody}>
-        <Text style={styles.cardTitle} numberOfLines={2}>{item.name}</Text>
-        <Text style={styles.cardCategory}>{item.category}</Text>
-        <Text style={styles.cardPrice}>${item.price?.toFixed?.(2) ?? item.price ?? ''}</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={() => handleAddToCart(item)}>
-          <Text style={styles.addBtnText}>Añadir al carrito</Text>
+  const renderItem = ({ item }: { item: Product }) => {
+    const cardTitleSize = isMobile ? 14 : isTablet ? 15 : 16;
+    const cardCategorySize = isMobile ? 11 : 12;
+    const cardPriceSize = isMobile ? 14 : isTablet ? 15 : 16;
+    const buttonTextSize = isMobile ? 12 : 14;
+    const imageHeight = isMobile ? 110 : isTablet ? 120 : 130;
+    
+    return (
+      <View style={[styles.card, { margin: 8, flex: 1, maxWidth: isMobile ? '100%' : isTablet ? '48%' : '32%' }]}>
+        <TouchableOpacity onPress={() => handleProductPress(item.id)}>
+          <Image source={{ uri: item.image }} style={[styles.cardImage, { height: imageHeight }]} />
         </TouchableOpacity>
+        <View style={styles.cardBody}>
+          <Text style={[styles.cardTitle, { fontSize: cardTitleSize }]} numberOfLines={2}>{item.name}</Text>
+          <Text style={[styles.cardCategory, { fontSize: cardCategorySize }]}>{item.category}</Text>
+          <Text style={[styles.cardPrice, { fontSize: cardPriceSize }]}>${item.price?.toFixed?.(2) ?? item.price ?? ''}</Text>
+          <TouchableOpacity style={[styles.addBtn, { paddingVertical: isMobile ? 6 : 8 }]} onPress={() => handleAddToCart(item)}>
+            <Text style={[styles.addBtnText, { fontSize: buttonTextSize }]}>Añadir al carrito</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
+  // Calcular número de columnas responsivas
+  const numColumns = isMobile ? 1 : isTablet ? 2 : 3;
+  const spacing = isMobile ? 12 : 16;
+  
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
+        key={numColumns} // Force re-render when columns change
         data={items}
         keyExtractor={(it) => it.id}
         renderItem={renderItem}
-        numColumns={2}
+        numColumns={numColumns}
         ListHeaderComponent={renderHero}
-        contentContainerStyle={styles.content}
-        columnWrapperStyle={styles.row}
+        contentContainerStyle={[
+          styles.content, 
+          { paddingHorizontal: spacing }
+        ]}
+        columnWrapperStyle={numColumns > 1 ? [
+          styles.row, 
+          { marginHorizontal: -spacing / 2 }
+        ] : undefined} // Only pass columnWrapperStyle if numColumns > 1
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         ListEmptyComponent={!loading ? (
-          <Text style={styles.emptyText}>No hay elementos para mostrar</Text>
+          <Text style={[styles.emptyText, { fontSize: isMobile ? 14 : 16 }]}>
+            No hay elementos para mostrar
+          </Text>
         ) : null}
       />
     </SafeAreaView>
@@ -111,7 +135,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   content: {
-    paddingHorizontal: 16,
     paddingBottom: 16,
   },
   row: {
@@ -119,16 +142,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   hero: {
-    height: HERO_H,
     backgroundColor: '#7b1fa2',
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
     padding: 24,
     marginBottom: 16,
+    justifyContent: 'center',
   },
   heroTitle: {
     color: '#fff',
-    fontSize: 28,
     fontWeight: '800',
   },
   heroSubtitle: {
@@ -156,31 +178,26 @@ const styles = StyleSheet.create({
   },
   cardImage: {
     width: '100%',
-    height: 130,
   },
   cardBody: {
     padding: 12,
   },
   cardTitle: {
-    fontSize: 16,
     fontWeight: '700',
     color: '#333',
     marginBottom: 4,
   },
   cardCategory: {
-    fontSize: 12,
     color: '#6c757d',
     marginBottom: 8,
   },
   cardPrice: {
-    fontSize: 16,
     fontWeight: '700',
     color: '#7b1fa2',
   },
   addBtn: {
     marginTop: 8,
     backgroundColor: '#7b1fa2',
-    paddingVertical: 8,
     borderRadius: 8,
     alignItems: 'center',
   },

@@ -9,21 +9,24 @@ import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { CartProvider, useCart } from "../contexts/CartContext";
+import { SettingsProvider, useHeaderTheme, useThemeColors } from "../contexts/SettingsContext";
+import { useResponsive } from "../utils/responsiveUtils";
 
-function BackButton() {
+function BackButton({ color = '#000' }: { color?: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const isPedidosAdmin = !!(pathname && pathname.startsWith('/pedidos'));
   const isCatalogAdmin = !!(pathname && pathname.startsWith('/catalogo'));
   const isPrecios = !!(pathname && pathname.startsWith('/precios'));
   const isProductos = !!(pathname && pathname.startsWith('/productos'));
+  const isVentas = !!(pathname && pathname.startsWith('/ventas'));
 
   // En pantallas admin específicas, usar Link para navegar confiablemente al Panel
-  if (isPedidosAdmin || isCatalogAdmin || isPrecios || isProductos) {
+  if (isPedidosAdmin || isCatalogAdmin || isPrecios || isProductos || isVentas) {
     return (
       <Link href="/dashboard" asChild>
         <TouchableOpacity style={{ marginRight: 10 }}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <Ionicons name="arrow-back" size={24} color={color} />
         </TouchableOpacity>
       </Link>
     );
@@ -47,18 +50,18 @@ function BackButton() {
       }}
       style={{ marginRight: 10 }}
     >
-      <Ionicons name="arrow-back" size={24} color="#000" />
+      <Ionicons name="arrow-back" size={24} color={color} />
     </TouchableOpacity>
   );
 }
 
-function CartButton() {
+function CartButton({ color = '#000' }: { color?: string }) {
   const router = useRouter();
   const { totalItems } = useCart();
   return (
     <TouchableOpacity onPress={() => router.push('/carrito')} style={{ marginLeft: 10 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <Ionicons name="cart-outline" size={24} color="#000" />
+        <Ionicons name="cart-outline" size={24} color={color} />
         {totalItems > 0 && (
           <View style={{
             marginLeft: 6,
@@ -75,9 +78,10 @@ function CartButton() {
   );
 }
 
-function LogoutButton() {
+function LogoutButton({ color = '#000' }: { color?: string }) {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { isMobile } = useResponsive();
 
   if (!user) return null;
 
@@ -93,8 +97,10 @@ function LogoutButton() {
   return (
     <TouchableOpacity onPress={handleLogout} style={{ marginLeft: 12 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <Ionicons name="log-out-outline" size={24} color="#000" />
-        <Text style={{ marginLeft: 6, fontSize: 14, color: '#000' }}>Cerrar sesión</Text>
+        <Ionicons name="log-out-outline" size={24} color={color} />
+        {!isMobile && (
+          <Text style={{ marginLeft: 6, fontSize: 14, color }}>Cerrar sesión</Text>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -102,6 +108,8 @@ function LogoutButton() {
 
 function DrawerLayout() {
   const { user, token, isLoading } = useAuth();
+  const { headerStyle, headerTintColor } = useHeaderTheme();
+  const colors = useThemeColors();
   useEffect(() => {
     console.log('[DrawerLayout] mounted, user:', user ? 'yes' : 'no');
   }, [user]);
@@ -119,18 +127,21 @@ function DrawerLayout() {
 
   return (
     <Drawer initialRouteName={initialRoute} screenOptions={{
+      headerStyle,
+      headerTintColor,
+      sceneContainerStyle: { backgroundColor: colors.background },
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
-          <BackButton />
-          <CartButton />
-          <LogoutButton />
+          <BackButton color={headerTintColor} />
+          <CartButton color={headerTintColor} />
+          <LogoutButton color={headerTintColor} />
         </View>
       )
     }}>
       {/* Ruta index eliminada para evitar redirecciones dentro del Drawer */}
       {/* Ocultar rutas internas y no deseadas en el menú */}
       <Drawer.Screen name="index" options={{ drawerItemStyle: { display: 'none' } }} />
-      <Drawer.Screen name="productos/index" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="productos/index" options={{ title: "Productos", drawerItemStyle: { display: 'none' } }} />
       {/* Rutas de registro ocultas del menú */}
       <Drawer.Screen name="auth/registerAdmin" options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="auth/registerRevendedor" options={{ drawerItemStyle: { display: 'none' } }} />
@@ -187,15 +198,17 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <AuthProvider>
-      <CartProvider>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <ErrorBoundary>
-            <DrawerLayout />
-          </ErrorBoundary>
-        </GestureHandlerRootView>
-      </CartProvider>
-    </AuthProvider>
+    <SettingsProvider>
+      <AuthProvider>
+        <CartProvider>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <ErrorBoundary>
+              <DrawerLayout />
+            </ErrorBoundary>
+          </GestureHandlerRootView>
+        </CartProvider>
+      </AuthProvider>
+    </SettingsProvider>
   );
 }
 

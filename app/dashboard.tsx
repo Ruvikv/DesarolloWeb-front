@@ -1,9 +1,11 @@
-import React, { useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Href, useRouter } from 'expo-router';
+import React, { useEffect } from 'react';
+import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
-import { useRouter, Href } from 'expo-router';
+import { useThemeColors } from '../contexts/SettingsContext';
+import { screenUtils, useResponsive } from '../utils/responsiveUtils';
 
 const { width } = Dimensions.get('window');
 const CARD_SIZE = width / 2 - 32;
@@ -17,23 +19,41 @@ interface CardProps {
   actionLabel: string;
 }
 
-const Card: React.FC<CardProps> = ({ title, subtitle, icon, onPress, gradient, actionLabel }) => (
-  <TouchableOpacity style={styles.cardContainer} onPress={onPress} activeOpacity={0.8}>
-    <LinearGradient colors={gradient} style={styles.cardGradient}>
-      <Ionicons name={icon} size={32} color="#fff" style={styles.cardIcon} />
-      <Text style={styles.cardTitle}>{title}</Text>
-      <Text style={styles.cardSubtitle}>{subtitle}</Text>
-      <View style={styles.actionButton}>
-        <Text style={styles.actionButtonText}>{actionLabel}</Text>
-      </View>
-    </LinearGradient>
-  </TouchableOpacity>
-);
+const Card: React.FC<CardProps> = ({ title, subtitle, icon, onPress, gradient, actionLabel }) => {
+  const { isMobile, isTablet } = useResponsive();
+  const iconSize = isMobile ? 24 : 32;
+  const titleSize = isMobile ? 16 : 18;
+  const subtitleSize = isMobile ? 10 : 12;
+  const actionButtonSize = isMobile ? 12 : 14;
+  const cardHeight = isMobile ? 140 : isTablet ? 160 : 180;
+  
+  return (
+    <TouchableOpacity 
+      style={[styles.cardContainer, { 
+        width: isMobile ? '100%' : isTablet ? '48%' : CARD_SIZE,
+        marginBottom: isMobile ? 16 : 24 
+      }]} 
+      onPress={onPress} 
+      activeOpacity={0.8}
+    >
+      <LinearGradient colors={gradient} style={[styles.cardGradient, { height: cardHeight }]}>
+        <Ionicons name={icon} size={iconSize} color="#fff" style={styles.cardIcon} />
+        <Text style={[styles.cardTitle, { fontSize: titleSize }]}>{title}</Text>
+        <Text style={[styles.cardSubtitle, { fontSize: subtitleSize }]}>{subtitle}</Text>
+        <View style={styles.actionButton}>
+          <Text style={[styles.actionButtonText, { fontSize: actionButtonSize }]}>{actionLabel}</Text>
+        </View>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+};
 
 const Dashboard = () => {
   const { user, token, isLoading, logout } = useAuth();
   const router = useRouter();
+  const { isMobile, isTablet, isDesktop } = useResponsive();
   const firstName = user?.name?.split(' ')[0] ?? 'Usuario';
+  const themeColors = useThemeColors();
 
   const handleLogout = async () => {
     try {
@@ -54,9 +74,9 @@ const Dashboard = () => {
   // Mostrar loading solo si se está verificando y aún no hay token
   if (isLoading && !token) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Verificando autenticación...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: themeColors.background }] }>
+        <ActivityIndicator size="large" color={themeColors.accent} />
+        <Text style={[styles.loadingText, { color: themeColors.textSecondary }]}>Verificando autenticación...</Text>
       </View>
     );
   }
@@ -118,18 +138,18 @@ const Dashboard = () => {
   ];
 
   return (
-    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
+    <ScrollView style={{ backgroundColor: themeColors.background }} contentContainerStyle={[styles.container, { padding: screenUtils.getResponsivePadding() }]} showsVerticalScrollIndicator={false}>
+      <View style={[styles.header, { marginBottom: isMobile ? 12 : 16 }]}>
         <View>
-          <Text style={styles.greeting}>Hola, {firstName} 👋</Text>
-          <Text style={styles.welcome}>Panel de Control</Text>
+          <Text style={[styles.greeting, { fontSize: isMobile ? 20 : 24, color: themeColors.textPrimary }]}>Hola, {firstName} 👋</Text>
+          <Text style={[styles.welcome, { fontSize: isMobile ? 14 : 16, color: themeColors.textSecondary }]}>Panel de Control</Text>
         </View>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={24} color="#ff4444" />
-          <Text style={styles.logoutText}>Cerrar Sesión</Text>
+        <TouchableOpacity style={[styles.logoutButton, { backgroundColor: themeColors.cardBackground }, isMobile && { paddingHorizontal: 8, paddingVertical: 6 }]} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={isMobile ? 20 : 24} color={themeColors.textPrimary} />
+          {!isMobile && <Text style={[styles.logoutText, { color: themeColors.textPrimary }]}>Cerrar Sesión</Text>}
         </TouchableOpacity>
       </View>
-      <View style={styles.grid}>
+      <View style={[styles.grid, isMobile && { flexDirection: 'column' }] as any}>
         {cards.map((card, index) => (
           <Card key={index} {...card} />
         ))}
@@ -142,21 +162,18 @@ export default Dashboard;
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    // El padding ahora se maneja dinámicamente
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
   },
   greeting: {
-    fontSize: 24,
     fontWeight: '600',
     marginBottom: 4,
   },
   welcome: {
-    fontSize: 16,
     color: '#666',
   },
   logoutButton: {
@@ -181,7 +198,6 @@ const styles = StyleSheet.create({
     color: '#ff4444',
     fontWeight: '600',
     marginLeft: 6,
-    fontSize: 14,
   },
   grid: {
     flexDirection: 'row',
@@ -189,25 +205,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   cardContainer: {
-    width: CARD_SIZE,
     marginBottom: 24,
   },
   cardGradient: {
     borderRadius: 16,
     padding: 16,
-    height: 180,
     justifyContent: 'space-between',
   },
   cardIcon: {
     alignSelf: 'flex-start',
   },
   cardTitle: {
-    fontSize: 18,
     fontWeight: '700',
     color: '#fff',
   },
   cardSubtitle: {
-    fontSize: 12,
     color: '#eee',
   },
   actionButton: {
@@ -229,7 +241,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
-    fontSize: 16,
     color: '#666',
   },
 });

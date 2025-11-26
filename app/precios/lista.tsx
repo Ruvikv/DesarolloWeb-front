@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Image, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { API_CONFIG } from '../../config/api.js';
+import { useThemeColors } from '../../contexts/SettingsContext';
 import { apiService } from '../../services/apiService';
 import { BarcodeProduct, barcodeService } from '../../services/barcodeService';
 import { Categoria as CategoriaItem, categoriasService } from '../../services/categoriasService';
@@ -56,6 +57,9 @@ export default function ListaPreciosScreen() {
   const zxingReaderRef = React.useRef<any>(null);
   const [scannerPermission, setScannerPermission] = useState<'granted' | 'denied' | 'undetermined'>('undetermined');
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+
+  const themeColors = useThemeColors();
+  const styles = makeStyles(themeColors);
 
   const cargarDatos = useCallback(async () => {
     setLoading(true);
@@ -129,8 +133,8 @@ export default function ListaPreciosScreen() {
 
       const video = videoRef.current;
       if (!video) return;
-      try { (video as any).setAttribute?.('playsinline', 'true'); } catch {}
-      try { (video as any).muted = true; } catch {}
+      try { (video as any).setAttribute?.('playsinline', 'true'); } catch { }
+      try { (video as any).muted = true; } catch { }
       video.srcObject = stream;
       await (video as any).play?.();
       setWebCameraActive(true);
@@ -165,14 +169,14 @@ export default function ListaPreciosScreen() {
   const stopWebCamera = () => {
     try {
       if (zxingReaderRef.current) {
-        try { zxingReaderRef.current.reset?.(); } catch {}
+        try { zxingReaderRef.current.reset?.(); } catch { }
         zxingReaderRef.current = null;
       }
       const video = videoRef.current;
       const stream: MediaStream | undefined = video?.srcObject as any;
       stream?.getTracks()?.forEach(t => t.stop());
       if (video) video.srcObject = null;
-    } catch {}
+    } catch { }
     setWebCameraActive(false);
   };
 
@@ -194,7 +198,7 @@ export default function ListaPreciosScreen() {
           setPrecioRapido('');
           setQuickCreateVisible(true);
         }
-      } catch {}
+      } catch { }
     })();
     stopWebCamera();
     setScannerVisible(false);
@@ -283,14 +287,14 @@ export default function ListaPreciosScreen() {
     const even = index % 2 === 0;
     if (isMobile) {
       return (
-        <View style={[styles.mobileCard, even && { backgroundColor: '#fafafa' }]}>
+        <View style={[styles.mobileCard, even && { backgroundColor: themeColors.segmentBg }]}>
           <View style={{ flexDirection: 'row' }}>
             <View style={{ marginRight: 12 }}>
               {imagenUrl ? (
                 <Image source={{ uri: imagenUrl }} style={styles.mobileImage} />
               ) : (
-                <View style={[styles.mobileImage, { alignItems: 'center', justifyContent: 'center', backgroundColor: '#eee' }]}>
-                  <Ionicons name="image-outline" size={20} color="#999" />
+                <View style={[styles.mobileImage, { alignItems: 'center', justifyContent: 'center', backgroundColor: themeColors.segmentBg }]}>
+                  <Ionicons name="image-outline" size={20} color={themeColors.textSecondary} />
                 </View>
               )}
             </View>
@@ -301,7 +305,7 @@ export default function ListaPreciosScreen() {
                 <Text style={styles.mobileLabel}>Costo:</Text>
                 <Text style={styles.mobileValue}>{typeof precioCosto === 'number' ? `$ ${precioCosto.toFixed(2)}` : '—'}</Text>
                 <Text style={[styles.mobileLabel, { marginLeft: 8 }]}>Ajustado:</Text>
-                <Text style={[styles.mobileValue, { color: '#4f46e5' }]}>{typeof ajustado === 'number' ? `$ ${ajustado.toFixed(2)}` : '—'}</Text>
+                <Text style={[styles.mobileValue, { color: themeColors.accent }]}>{typeof ajustado === 'number' ? `$ ${ajustado.toFixed(2)}` : '—'}</Text>
               </View>
               <View style={styles.mobileRow}>
                 <Text style={styles.mobileLabel}>Stock:</Text>
@@ -314,7 +318,7 @@ export default function ListaPreciosScreen() {
           </View>
           <View style={styles.mobileActions}>
             <TouchableOpacity style={styles.iconBtn} onPress={onEdit}>
-              <Ionicons name="create-outline" size={18} color="#667eea" />
+              <Ionicons name="create-outline" size={18} color={themeColors.accent} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconBtn} onPress={onDelete}>
               <Ionicons name="trash-outline" size={18} color="#e53935" />
@@ -325,7 +329,7 @@ export default function ListaPreciosScreen() {
     }
     return (
       <View style={[styles.row, even && styles.rowEven]}>
-        <View style={[styles.cellImage, styles.cellBorder]}>{imagenUrl ? <Image source={{ uri: imagenUrl }} style={styles.image} /> : <View style={styles.imagePlaceholder}><Ionicons name="image-outline" size={20} color="#999" /></View>}</View>
+        <View style={[styles.cellImage, styles.cellBorder]}>{imagenUrl ? <Image source={{ uri: imagenUrl }} style={styles.image} /> : <View style={styles.imagePlaceholder}><Ionicons name="image-outline" size={20} color={themeColors.textSecondary} /></View>}</View>
         <Text style={[styles.cellName, styles.cellBorder]} numberOfLines={1}>{nombre}</Text>
         <Text style={[styles.cellSku, styles.cellBorder]}>{sku || '—'}</Text>
         <Text style={[styles.cellMoney, styles.cellBorder]}>{typeof precioCosto === 'number' ? `$ ${precioCosto.toFixed(2)}` : '—'}</Text>
@@ -334,7 +338,7 @@ export default function ListaPreciosScreen() {
         <Text style={[styles.cellDesc, styles.cellBorder]} numberOfLines={1}>{desc || '—'}</Text>
         <View style={styles.cellActions}>
           <TouchableOpacity style={styles.iconBtn} onPress={onEdit}>
-            <Ionicons name="create-outline" size={18} color="#667eea" />
+            <Ionicons name="create-outline" size={18} color={themeColors.accent} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} onPress={onDelete}>
             <Ionicons name="trash-outline" size={18} color="#e53935" />
@@ -456,7 +460,7 @@ export default function ListaPreciosScreen() {
 
       {loading ? (
         <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color="#667eea" />
+          <ActivityIndicator size="large" color={themeColors.accent} />
           <Text style={styles.loadingText}>Obteniendo datos…</Text>
         </View>
       ) : (
@@ -464,31 +468,31 @@ export default function ListaPreciosScreen() {
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, styles.sectionTitleChip]}>Ajuste Global de Precio de Costo</Text>
             <Text style={styles.adjustHint}>Este valor (en %) se aplica al precio de costo antes de calcular el precio final.</Text>
-          <View style={styles.adjustRow}>
-            <TextInput
-              placeholder="0"
-              value={ajusteValor}
-              onChangeText={setAjusteValor}
-              keyboardType="numeric"
-              style={styles.adjustInput}
-              editable={!savingAjuste}
-            />
-            <Text style={styles.percentMark}>%</Text>
-            <TouchableOpacity style={[styles.applyBtn, savingAjuste && { opacity: 0.6 }]} disabled={savingAjuste} onPress={guardarAjuste}>
-              <Text style={styles.applyBtnText}>{savingAjuste ? 'Guardando…' : 'Aplicar Ajuste'}</Text>
-            </TouchableOpacity>
-          </View>
-          {ajusteNotice && (
-            <View style={[styles.noticeBox, ajusteNotice.type === 'success' ? styles.noticeSuccess : styles.noticeError]}>
-              <Ionicons name={ajusteNotice.type === 'success' ? 'checkmark-circle' : 'alert-circle'} size={16} color={ajusteNotice.type === 'success' ? '#2e7d32' : '#c62828'} />
-              <Text style={[styles.noticeText, ajusteNotice.type === 'success' ? { color: '#2e7d32' } : { color: '#c62828' }]}>{ajusteNotice.text}</Text>
+            <View style={styles.adjustRow}>
+              <TextInput
+                placeholder="0"
+                value={ajusteValor}
+                onChangeText={setAjusteValor}
+                keyboardType="numeric"
+                style={styles.adjustInput}
+                editable={!savingAjuste}
+              />
+              <Text style={styles.percentMark}>%</Text>
+              <TouchableOpacity style={[styles.applyBtn, savingAjuste && { opacity: 0.6 }]} disabled={savingAjuste} onPress={guardarAjuste}>
+                <Text style={styles.applyBtnText}>{savingAjuste ? 'Guardando…' : 'Aplicar Ajuste'}</Text>
+              </TouchableOpacity>
             </View>
-          )}
+            {ajusteNotice && (
+              <View style={[styles.noticeBox, ajusteNotice.type === 'success' ? styles.noticeSuccess : styles.noticeError]}>
+                <Ionicons name={ajusteNotice.type === 'success' ? 'checkmark-circle' : 'alert-circle'} size={16} color={ajusteNotice.type === 'success' ? '#2e7d32' : '#c62828'} />
+                <Text style={[styles.noticeText, ajusteNotice.type === 'success' ? { color: '#2e7d32' } : { color: '#c62828' }]}>{ajusteNotice.text}</Text>
+              </View>
+            )}
           </View>
 
-          <View style={[styles.section, { paddingVertical: 8 }]}> 
+          <View style={[styles.section, { paddingVertical: 8 }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="search-outline" size={18} color="#666" />
+              <Ionicons name="search-outline" size={18} color={themeColors.textSecondary} />
               <TextInput
                 placeholder="Buscar producto…"
                 value={search}
@@ -559,7 +563,7 @@ export default function ListaPreciosScreen() {
       {/* Modal de lector de código de barras */}
       <Modal visible={scannerVisible} animationType="slide" onRequestClose={() => setScannerVisible(false)}>
         <View style={{ flex: 1, backgroundColor: '#000' }}>
-          <View style={{ padding: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#667eea' }}>
+          <View style={{ padding: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: themeColors.accent }}>
             <Text style={{ color: '#fff', fontWeight: '700' }}>Lector de código de barras</Text>
             <TouchableOpacity onPress={() => setScannerVisible(false)}>
               <Ionicons name="close-outline" size={24} color="#fff" />
@@ -618,12 +622,12 @@ export default function ListaPreciosScreen() {
                   onChangeText={setManualCode}
                   style={{ flex: 1, backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 }}
                 />
-            <TouchableOpacity
-              style={{ marginLeft: 8, backgroundColor: '#667eea', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8 }}
-              onPress={() => manualCode.trim() && onBarcodeScannedWeb(manualCode.trim())}
-            >
-              <Text style={{ color: '#fff', fontWeight: '700' }}>Buscar</Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ marginLeft: 8, backgroundColor: '#667eea', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8 }}
+                  onPress={() => manualCode.trim() && onBarcodeScannedWeb(manualCode.trim())}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '700' }}>Buscar</Text>
+                </TouchableOpacity>
               </View>
 
               {webCameraCapable && !webCameraActive && (
@@ -654,11 +658,11 @@ export default function ListaPreciosScreen() {
 
       {/* Modal Alta Rápida post-escaneo */}
       <Modal visible={quickCreateVisible} animationType="slide" onRequestClose={() => setQuickCreateVisible(false)}>
-        <View style={{ flex: 1, backgroundColor: '#fff' }}>
-          <View style={{ padding: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#eee' }}>
-            <Text style={{ fontWeight: '700' }}>Alta rápida de producto</Text>
+        <View style={{ flex: 1, backgroundColor: themeColors.cardBackground }}>
+          <View style={{ padding: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: themeColors.border }}>
+            <Text style={{ fontWeight: '700', color: themeColors.textPrimary }}>Alta rápida de producto</Text>
             <TouchableOpacity onPress={() => setQuickCreateVisible(false)}>
-              <Ionicons name="close-outline" size={24} color="#333" />
+              <Ionicons name="close-outline" size={24} color={themeColors.textPrimary} />
             </TouchableOpacity>
           </View>
           <View style={{ padding: 16 }}>
@@ -666,21 +670,21 @@ export default function ListaPreciosScreen() {
               <View style={{ marginBottom: 16 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   {scanInfo.imagen_url ? (
-                    <Image source={{ uri: scanInfo.imagen_url }} style={{ width: 64, height: 64, borderRadius: 8, backgroundColor: '#eee', marginRight: 12 }} />
+                    <Image source={{ uri: scanInfo.imagen_url }} style={{ width: 64, height: 64, borderRadius: 8, backgroundColor: themeColors.segmentBg, marginRight: 12 }} />
                   ) : (
-                    <View style={{ width: 64, height: 64, borderRadius: 8, backgroundColor: '#eee', marginRight: 12, alignItems: 'center', justifyContent: 'center' }}>
-                      <Ionicons name="image-outline" size={20} color="#999" />
+                    <View style={{ width: 64, height: 64, borderRadius: 8, backgroundColor: themeColors.segmentBg, marginRight: 12, alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name="image-outline" size={20} color={themeColors.textSecondary} />
                     </View>
                   )}
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: '700' }}>{scanInfo.nombre}</Text>
-                    {!!scanInfo.marca && <Text style={{ color: '#666', marginTop: 2 }}>{scanInfo.marca}</Text>}
-                    {!!scanInfo.descripcion && <Text style={{ color: '#666', marginTop: 4 }} numberOfLines={2}>{scanInfo.descripcion}</Text>}
+                    <Text style={{ fontWeight: '700', color: themeColors.textPrimary }}>{scanInfo.nombre}</Text>
+                    {!!scanInfo.marca && <Text style={{ color: themeColors.textSecondary, marginTop: 2 }}>{scanInfo.marca}</Text>}
+                    {!!scanInfo.descripcion && <Text style={{ color: themeColors.textSecondary, marginTop: 4 }} numberOfLines={2}>{scanInfo.descripcion}</Text>}
                   </View>
                 </View>
               </View>
             ) : (
-              <Text style={{ color: '#666' }}>No se encontraron datos globales para el código escaneado. Puedes crear el producto manualmente desde la sección de productos.</Text>
+              <Text style={{ color: themeColors.textSecondary }}>No se encontraron datos globales para el código escaneado. Puedes crear el producto manualmente desde la sección de productos.</Text>
             )}
             <View style={{ marginTop: 8 }}>
               <Text style={{ marginBottom: 6 }}>Precio de costo</Text>
@@ -689,7 +693,7 @@ export default function ListaPreciosScreen() {
                 value={precioRapido}
                 onChangeText={setPrecioRapido}
                 keyboardType="numeric"
-                style={{ borderWidth: 1, borderColor: '#ddd', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 }}
+                style={{ borderWidth: 1, borderColor: themeColors.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, color: themeColors.textPrimary, backgroundColor: themeColors.cardBackground }}
               />
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16 }}>
@@ -780,7 +784,7 @@ export default function ListaPreciosScreen() {
                     const files: File[] = Array.from(e.target.files || []);
                     const max5 = files.slice(0, 5);
                     setEditImagenes(max5);
-                  } catch {}
+                  } catch { }
                 }
               })}
               {editImagenes.length > 0 && (
@@ -788,7 +792,7 @@ export default function ListaPreciosScreen() {
                   {editImagenes.map((f: File, idx: number) => (
                     <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
                       <Ionicons name="document-text-outline" size={16} color="#777" />
-                      <Text style={{ marginLeft: 6, color: '#555', flex: 1 }} numberOfLines={1}>{f.name || `imagen-${idx+1}`}</Text>
+                      <Text style={{ marginLeft: 6, color: '#555', flex: 1 }} numberOfLines={1}>{f.name || `imagen-${idx + 1}`}</Text>
                       <TouchableOpacity onPress={() => setEditImagenes(prev => prev.filter((_, i) => i !== idx))}>
                         <Ionicons name="close-circle-outline" size={18} color="#c62828" />
                       </TouchableOpacity>
@@ -810,25 +814,27 @@ export default function ListaPreciosScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+
+const makeStyles = (colors: any) => StyleSheet.create({
   container: {
     padding: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.cardBackground,
     padding: 12,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e5e5e5',
+    borderColor: colors.border,
   },
   title: {
     fontSize: 22,
     fontWeight: '700',
+    color: colors.textPrimary,
   },
   toolbar: {
     flexDirection: 'row',
@@ -836,17 +842,16 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   refresh: {
-    backgroundColor: '#667eea',
+    backgroundColor: colors.accent,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
   },
-  scanBtn: { backgroundColor: '#667eea', marginRight: 8 },
-  // En móvil, reducir padding para que el botón no se vea gigante
+  scanBtn: { backgroundColor: colors.accent, marginRight: 8 },
   scanBtnMobile: { paddingHorizontal: 10, paddingVertical: 6 },
-  refreshBtn: { backgroundColor: '#667eea' },
+  refreshBtn: { backgroundColor: colors.accent },
   refreshText: {
     color: '#fff',
     fontWeight: '600',
@@ -858,12 +863,12 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 8,
-    color: '#555',
+    color: colors.textSecondary,
   },
   section: {
     marginTop: 16,
     borderRadius: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.cardBackground,
     padding: 12,
     shadowColor: '#000',
     shadowOpacity: 0.08,
@@ -874,112 +879,326 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 8,
+    color: colors.textPrimary,
   },
   sectionTitleChip: {
     alignSelf: 'flex-start',
-    backgroundColor: '#667eea',
-    color: '#fff',
+    backgroundColor: colors.accent,
     paddingHorizontal: 10,
     paddingVertical: 6,
+    borderRadius: 8,
+    overflow: 'hidden',
+    color: '#fff',
+  },
+  adjustHint: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 12,
+  },
+  adjustRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  adjustInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    width: 80,
+    textAlign: 'center',
+    color: colors.textPrimary,
+    backgroundColor: colors.cardBackground,
+  },
+  percentMark: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+    marginRight: 16,
+    color: colors.textPrimary,
+  },
+  applyBtn: {
+    backgroundColor: '#2e7d32',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 8,
   },
-  adjustHint: { fontSize: 13, color: '#666', marginBottom: 8 },
-  adjustRow: { flexDirection: 'row', alignItems: 'center' },
-  adjustInput: { width: 80, borderWidth: 1, borderColor: '#ddd', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 6 },
-  percentMark: { marginHorizontal: 8, fontSize: 16, fontWeight: '700', color: '#333' },
-  applyBtn: { backgroundColor: '#667eea', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6 },
-  applyBtnText: { color: '#fff', fontWeight: '700' },
-  noticeBox: { marginTop: 8, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  noticeSuccess: { backgroundColor: '#e8f5e9', borderWidth: StyleSheet.hairlineWidth, borderColor: '#c8e6c9' },
-  noticeError: { backgroundColor: '#ffebee', borderWidth: StyleSheet.hairlineWidth, borderColor: '#ffcdd2' },
-  noticeText: { fontSize: 13, fontWeight: '600' },
-  searchInput: {
-    marginLeft: 8,
-    flex: 1,
-    backgroundColor: '#fff',
+  applyBtnText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  noticeBox: {
+    marginTop: 12,
+    padding: 10,
     borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.segmentBg,
+  },
+  noticeSuccess: {
+    backgroundColor: '#e8f5e9',
+  },
+  noticeError: {
+    backgroundColor: '#ffebee',
+  },
+  noticeText: {
+    marginLeft: 8,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 16,
+    color: colors.textPrimary,
+    backgroundColor: 'transparent',
   },
   row: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.border,
   },
-  rowEven: { backgroundColor: '#fafafa' },
-  cellImage: { width: 64, height: 64, marginRight: 8 },
-  image: { width: 64, height: 64, borderRadius: 8, backgroundColor: '#eee' },
-  imagePlaceholder: { width: 64, height: 64, borderRadius: 8, backgroundColor: '#eee', alignItems: 'center', justifyContent: 'center' },
-  cellName: { flex: 1, marginRight: 8, fontWeight: '600', paddingVertical: 4, paddingHorizontal: 6 },
-<<<<<<< HEAD
-  cellSku: { width: 110, minWidth: 90, color: '#777', paddingVertical: 4, paddingHorizontal: 6, flexShrink: 0 },
-  cellMoney: { width: 140, minWidth: 110, textAlign: 'right', paddingVertical: 4, paddingHorizontal: 6, flexShrink: 0 },
-  cellMoneyAccent: { width: 140, minWidth: 110, textAlign: 'right', color: '#1e88e5', fontWeight: '700', paddingVertical: 4, paddingHorizontal: 6, flexShrink: 0 },
-  cellStock: { width: 70, minWidth: 60, textAlign: 'center', paddingVertical: 4, paddingHorizontal: 6, flexShrink: 0 },
-  cellDesc: { flex: 1, minWidth: 120, marginLeft: 8, color: '#555', paddingVertical: 4, paddingHorizontal: 6, flexShrink: 1 },
-=======
-  cellSku: { width: 110, color: '#777', paddingVertical: 4, paddingHorizontal: 6 },
-  cellMoney: { width: 140, textAlign: 'right', paddingVertical: 4, paddingHorizontal: 6 },
-  cellMoneyAccent: { width: 140, textAlign: 'right', color: '#4f46e5', fontWeight: '700', paddingVertical: 4, paddingHorizontal: 6, backgroundColor: '#eef2ff', borderRadius: 4 },
-  cellStock: { width: 70, textAlign: 'center', paddingVertical: 4, paddingHorizontal: 6 },
-  cellDesc: { flex: 1, marginLeft: 8, color: '#555', paddingVertical: 4, paddingHorizontal: 6 },
->>>>>>> app-naty
-  cellActions: { width: 90, flexDirection: 'row', justifyContent: 'flex-end' },
-  iconBtn: { paddingHorizontal: 6 },
-  cellBorder: { borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: '#e5e5e5' },
-  headerRow: { backgroundColor: '#667eea' },
-  headerAccentCell: { backgroundColor: '#5b6fe7', borderRadius: 4 },
-  headerCellText: { fontWeight: '700', color: '#ffffff' },
-  cellImageHeader: { width: 72, height: 24, justifyContent: 'center' },
-  modalLabel: { fontSize: 14, fontWeight: '600', marginBottom: 6, marginTop: 8 },
-  modalInput: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: '#fff' },
-  fakeUploadRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#eee', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 10, backgroundColor: '#fafafa' },
-  saveBtn: { backgroundColor: '#667eea', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8 },
-  saveBtnText: { color: '#fff', fontWeight: '700' },
-  modalNote: { fontSize: 12, color: '#666', marginTop: 4 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center', padding: 16 },
-  modalCard: { width: '100%', maxWidth: 900, borderRadius: 14, backgroundColor: '#fff', overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, elevation: 6, borderWidth: StyleSheet.hairlineWidth, borderColor: '#e5e5e5' },
-  modalHeader: { padding: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#667eea', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#667eea' },
-  modalHeaderTitle: { fontWeight: '700', color: '#fff' },
-  // Estilos móviles para tarjeta compacta
+  rowEven: {
+    backgroundColor: colors.segmentBg,
+  },
+  headerRow: {
+    backgroundColor: colors.segmentBg,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  cellBorder: {
+  },
+  headerCellText: {
+    fontWeight: '700',
+    color: colors.textPrimary,
+    fontSize: 13,
+  },
+  headerAccentCell: {
+    color: colors.accent,
+  },
+  cellImage: {
+    width: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cellImageHeader: {
+    width: 50,
+  },
+  image: {
+    width: 40,
+    height: 40,
+    borderRadius: 4,
+    backgroundColor: colors.segmentBg,
+  },
+  imagePlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 4,
+    backgroundColor: colors.segmentBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cellName: {
+    flex: 2,
+    paddingHorizontal: 8,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  cellSku: {
+    flex: 1,
+    paddingHorizontal: 8,
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  cellMoney: {
+    flex: 1,
+    paddingHorizontal: 8,
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    textAlign: 'right',
+  },
+  cellMoneyAccent: {
+    flex: 1,
+    paddingHorizontal: 8,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.accent,
+    textAlign: 'right',
+  },
+  cellStock: {
+    width: 60,
+    paddingHorizontal: 8,
+    fontSize: 14,
+    textAlign: 'center',
+    color: colors.textPrimary,
+  },
+  cellDesc: {
+    flex: 2,
+    paddingHorizontal: 8,
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  cellActions: {
+    width: 80,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  iconBtn: {
+    padding: 6,
+  },
   mobileCard: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#eee',
+    backgroundColor: colors.cardBackground,
     borderRadius: 12,
     padding: 12,
-    backgroundColor: '#fff',
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  mobileImage: { width: 64, height: 64, borderRadius: 8 },
-  mobileTitle: { fontWeight: '700', fontSize: 15, color: '#222', flexShrink: 1 },
-  mobileSub: { color: '#777', marginTop: 2, flexShrink: 1 },
-  mobileRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6, flexWrap: 'wrap' },
-  mobileLabel: { color: '#555', fontWeight: '600' },
-  mobileValue: { color: '#222', marginLeft: 4, flexShrink: 1 },
-  mobileDesc: { color: '#555', marginTop: 6 },
-  mobileActions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 },
+  mobileImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 8,
+    backgroundColor: colors.segmentBg,
+  },
+  mobileTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  mobileSub: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginBottom: 6,
+  },
+  mobileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  mobileLabel: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginRight: 6,
+  },
+  mobileValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  mobileDesc: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  mobileActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  modalCard: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: 12,
+    maxHeight: '90%',
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  modalHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  modalLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 6,
+    marginTop: 12,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: colors.textPrimary,
+    backgroundColor: colors.cardBackground,
+  },
+  modalNote: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  saveBtn: {
+    backgroundColor: '#2e7d32',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  fakeUploadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
 });
 
-// Modal de alta rápida (debajo del StyleSheet para mantener el archivo ordenado)
-// Nota: declaramos un componente inline para mantener cohesionada la pantalla.
-  // Helper: construir URL de imagen compatible con backend (prefijo BASE_URL si es relativa)
-  const resolveImageUrl = (input: any): string => {
-    try {
-      if (typeof input !== 'string') return '';
-      let url = input.trim();
-      if (!url) return '';
-      // Normalizar duplicados en path product-images
-      while (url.includes('product-images/product-images/')) {
-        url = url.replace('product-images/product-images/', 'product-images/');
-      }
-      // Si ya es absoluta, devolver tal cual
-      if (/^https?:\/\//i.test(url)) return url;
-      // Si es relativa, asegurar prefijo BASE_URL y slash
-      const base = API_CONFIG.BASE_URL.replace(/\/$/, '');
-      const path = url.startsWith('/') ? url : `/${url}`;
-      return `${base}${path}`;
-    } catch {
-      return '';
+// Helper function to construct image URL
+const resolveImageUrl = (input: any): string => {
+  try {
+    if (typeof input !== 'string') return '';
+    let url = input.trim();
+    if (!url) return '';
+    // Normalize duplicates in path product-images
+    while (url.includes('product-images/product-images/')) {
+      url = url.replace('product-images/product-images/', 'product-images/');
     }
-  };
+    // If it's already absolute, return as is
+    if (/^https?:\/\//i.test(url)) return url;
+    // If it's relative, ensure BASE_URL prefix and slash
+    const base = API_CONFIG.BASE_URL.replace(/\/$/, '');
+    const path = url.startsWith('/') ? url : `/${url}`;
+    return `${base}${path}`;
+  } catch {
+    return '';
+  }
+};

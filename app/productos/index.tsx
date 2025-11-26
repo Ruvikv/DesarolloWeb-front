@@ -1,9 +1,15 @@
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Image, Modal, Platform, ScrollView, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import styled from 'styled-components/native';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import { useAuth } from '../../contexts/AuthContext';
 import { actualizarDescripcionCatalogo, productService } from '../../services/catalogoService';
 import { Categoria, categoriasService } from '../../services/categoriasService';
 import { calcularPrecioFinal, calcularPrecioTemporal, ProductoAdmin, productosService, STOCK_CRITICO } from '../../services/productosService';
 import { safeAsyncStorage } from '../../services/storageUtils';
+import { useResponsive } from '../../utils/responsiveUtils';
 
 type GrupoCategoria = { categoriaId: string; categoriaNombre: string; items: ProductoAdmin[] };
 
@@ -80,8 +86,7 @@ export default function ProductosScreen() {
   const [downloadingExcel, setDownloadingExcel] = useState(false);
   const [downloadingPDF, setDownloadingPDF] = useState(false);
 
-  const { width } = useWindowDimensions();
-  const isMobile = width < 640 || Platform.OS !== 'web';
+  const { isMobile } = useResponsive();
 
   const cargarDatos = async () => {
     try {
@@ -247,20 +252,20 @@ export default function ProductosScreen() {
         <Toolbar>
           <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 10 }}>Filtros de Búsqueda</Text>
           {/* Barra superior ordenada */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+          <View style={{ flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', flexWrap: 'wrap' }}>
             {/* Buscar */}
-            <View style={{ marginRight: 12, marginBottom: 8 }}>
+            <View style={{ marginRight: isMobile ? 0 : 12, marginBottom: 8 }}>
               <TextInput
                 placeholder="Buscar producto…"
                 value={q}
                 onChangeText={setQ}
-                style={{ width: 260, height: 38, backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 10, borderWidth: 1, borderColor: '#ddd' }}
+                style={{ width: isMobile ? '100%' : 260, height: 38, backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 10, borderWidth: 1, borderColor: '#ddd' }}
               />
             </View>
 
             {/* Categoría */}
             {Platform.OS === 'web' ? (
-              <View style={{ marginRight: 12, marginBottom: 8 }}>
+              <View style={{ marginRight: isMobile ? 0 : 12, marginBottom: 8 }}>
                 {(
                   // Web select para mejor orden visual
                   <select
@@ -269,7 +274,7 @@ export default function ProductosScreen() {
                       const val = e.target.value;
                       setCategoriaId(val === 'all' ? null : val);
                     }}
-                    style={{ width: 260, height: 38, borderRadius: 8, border: '1px solid #ddd', padding: '8px 10px', background: '#fff', color: '#333' }}
+                    style={{ width: isMobile ? '100%' : 260, height: 38, borderRadius: 8, border: '1px solid #ddd', padding: '8px 10px', background: '#fff', color: '#333' }}
                   >
                     <option value="all">Todas las categorías</option>
                     {categorias.map(c => (
@@ -282,7 +287,7 @@ export default function ProductosScreen() {
                 )}
               </View>
             ) : (
-              <View style={{ marginRight: 12, marginBottom: 8 }}>
+              <View style={{ marginRight: isMobile ? 0 : 12, marginBottom: 8 }}>
                 <FlatList
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -304,15 +309,15 @@ export default function ProductosScreen() {
             )}
 
             {/* Stock */}
-            <View style={{ marginRight: 12, marginBottom: 8, flexDirection: 'row' }}>
-              <TextInput placeholder="Min" value={stockMin} onChangeText={setStockMin} keyboardType="numeric" style={{ width: 120, height: 38, backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 10, borderWidth: 1, borderColor: '#ddd', marginRight: 8 }} />
-              <TextInput placeholder="Máx" value={stockMax} onChangeText={setStockMax} keyboardType="numeric" style={{ width: 120, height: 38, backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 10, borderWidth: 1, borderColor: '#ddd' }} />
+            <View style={{ marginRight: isMobile ? 0 : 12, marginBottom: 8, flexDirection: 'row', gap: 8 }}>
+              <TextInput placeholder={isMobile ? "Stock Min" : "Min"} value={stockMin} onChangeText={setStockMin} keyboardType="numeric" style={{ flex: isMobile ? 1 : undefined, width: isMobile ? undefined : 120, height: 38, backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 10, borderWidth: 1, borderColor: '#ddd' }} />
+              <TextInput placeholder={isMobile ? "Stock Max" : "Máx"} value={stockMax} onChangeText={setStockMax} keyboardType="numeric" style={{ flex: isMobile ? 1 : undefined, width: isMobile ? undefined : 120, height: 38, backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 10, borderWidth: 1, borderColor: '#ddd' }} />
             </View>
 
             {/* Precio Final */}
-            <View style={{ marginRight: 12, marginBottom: 8, flexDirection: 'row' }}>
-              <TextInput placeholder="Min" value={priceMin} onChangeText={setPriceMin} keyboardType="numeric" style={{ width: 130, height: 38, backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 10, borderWidth: 1, borderColor: '#ddd', marginRight: 8 }} />
-              <TextInput placeholder="Máx" value={priceMax} onChangeText={setPriceMax} keyboardType="numeric" style={{ width: 130, height: 38, backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 10, borderWidth: 1, borderColor: '#ddd' }} />
+            <View style={{ marginRight: isMobile ? 0 : 12, marginBottom: 8, flexDirection: 'row', gap: 8 }}>
+              <TextInput placeholder={isMobile ? "Precio Min" : "Min"} value={priceMin} onChangeText={setPriceMin} keyboardType="numeric" style={{ flex: isMobile ? 1 : undefined, width: isMobile ? undefined : 130, height: 38, backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 10, borderWidth: 1, borderColor: '#ddd' }} />
+              <TextInput placeholder={isMobile ? "Precio Max" : "Máx"} value={priceMax} onChangeText={setPriceMax} keyboardType="numeric" style={{ flex: isMobile ? 1 : undefined, width: isMobile ? undefined : 130, height: 38, backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 10, borderWidth: 1, borderColor: '#ddd' }} />
             </View>
 
             {/* Solo crítico + Limpiar */}
@@ -336,12 +341,24 @@ export default function ProductosScreen() {
           {/* Línea decorativa */}
           <LinearGradient colors={[COLORS.primary, '#764ba2']} style={{ height: 6, borderRadius: 6, marginTop: 8 }} />
 
-          <View style={{ marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <View style={{ marginTop: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             <TouchableOpacity
               onPress={handleGenerarPreciosConsumidorFinal}
-              style={{ backgroundColor: '#4caf50', paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, marginRight: 8, minWidth: isMobile ? 44 : 200, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
+              style={{ 
+                backgroundColor: '#4caf50', 
+                paddingVertical: 10, 
+                paddingHorizontal: 12, 
+                borderRadius: 8, 
+                flex: isMobile ? 1 : 0,
+                minWidth: isMobile ? 0 : 200, 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                flexDirection: 'row'
+              }}
             >
-              <Text style={{ color: '#fff', fontWeight: '600', fontSize: isMobile ? 12 : 14 }}>{isMobile ? 'Generar' : 'Generar precios consumidor final'}</Text>
+              <Text style={{ color: '#fff', fontWeight: '600', fontSize: isMobile ? 13 : 14 }}>
+                {isMobile ? 'Generar Precios' : 'Generar precios consumidor final'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -355,12 +372,23 @@ export default function ProductosScreen() {
                   setDownloadingExcel(false);
                 }
               }}
-              style={{ backgroundColor: '#607d8b', paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, marginRight: 8, minWidth: isMobile ? 110 : 160, alignItems: 'center' }}
+              style={{ 
+                backgroundColor: '#607d8b', 
+                paddingVertical: 10, 
+                paddingHorizontal: 12, 
+                borderRadius: 8, 
+                flex: isMobile ? 1 : 0,
+                minWidth: isMobile ? 0 : 140, 
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
             >
               {downloadingExcel ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={{ color: '#fff' }}>{isMobile ? 'Excel' : 'Descargar Excel'}</Text>
+                <Text style={{ color: '#fff', fontWeight: '600', fontSize: isMobile ? 13 : 14 }}>
+                  {isMobile ? 'Excel' : 'Descargar Excel'}
+                </Text>
               )}
             </TouchableOpacity>
 
@@ -375,12 +403,23 @@ export default function ProductosScreen() {
                   setDownloadingPDF(false);
                 }
               }}
-              style={{ backgroundColor: '#795548', paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, minWidth: isMobile ? 110 : 160, alignItems: 'center' }}
+              style={{ 
+                backgroundColor: '#795548', 
+                paddingVertical: 10, 
+                paddingHorizontal: 12, 
+                borderRadius: 8, 
+                flex: isMobile ? 1 : 0,
+                minWidth: isMobile ? 0 : 140, 
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
             >
               {downloadingPDF ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={{ color: '#fff' }}>{isMobile ? 'PDF' : 'Descargar PDF'}</Text>
+                <Text style={{ color: '#fff', fontWeight: '600', fontSize: isMobile ? 13 : 14 }}>
+                  {isMobile ? 'PDF' : 'Descargar PDF'}
+                </Text>
               )}
             </TouchableOpacity>
           </View>
@@ -403,25 +442,118 @@ export default function ProductosScreen() {
                   </Text>
                 </TouchableOpacity>
                 {!collapsed[g.categoriaId] && (
+                  isMobile ? (
+                    <View>
+                      {g.items.map(p => (
+                        <Card key={p.id}>
+                          <View style={{ flexDirection: 'row', marginBottom: 8 }}>
+                            {/* Imagen Móvil */}
+                            <Image 
+                              source={p.imagen_principal || p.imagen ? { uri: p.imagen_principal || p.imagen } : require('../../assets/images/icon.png')}
+                              style={{ width: 60, height: 60, borderRadius: 8, marginRight: 12, backgroundColor: '#f0f0f0' }}
+                              resizeMode="cover"
+                            />
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontWeight: '600', fontSize: 16, color: '#333' }}>{p.nombre}</Text>
+                              <Text style={{ color: '#666', fontSize: 12 }}>SKU: {p.sku || '-'}</Text>
+                            </View>
+                          </View>
+                          
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                             <View style={{ flexDirection: 'row', gap: 8 }}>
+                                <View style={{ paddingVertical: 2, paddingHorizontal: 8, borderRadius: 12, backgroundColor: (p.stock ?? 0) <= STOCK_CRITICO ? COLORS.warningBg : COLORS.successBg }}>
+                                    <Text style={{ color: (p.stock ?? 0) <= STOCK_CRITICO ? COLORS.warningText : COLORS.successText, fontSize: 12 }}>Stock: {p.stock ?? 0}</Text>
+                                </View>
+                                <View style={{ paddingVertical: 2, paddingHorizontal: 8, borderRadius: 12, backgroundColor: p.activo ? COLORS.successBg : COLORS.inactiveBg }}>
+                                    <Text style={{ color: p.activo ? COLORS.successText : COLORS.inactiveText, fontSize: 12 }}>{p.activo ? 'Activo' : 'Inactivo'}</Text>
+                                </View>
+                             </View>
+                          </View>
+
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                            <View>
+                                <Text style={{ fontSize: 12, color: '#666' }}>Costo</Text>
+                                <Text style={{ fontWeight: '600' }}>{p.precio_costo ? `$${Number(p.precio_costo).toFixed(0)}` : '-'}</Text>
+                            </View>
+                            <View>
+                                <Text style={{ fontSize: 12, color: '#666', textAlign: 'right' }}>Final</Text>
+                                {(() => {
+                                    const pctGlobalNum = Number(porcentajeGlobal);
+                                    const usaGlobal = porcentajeGlobal.trim() !== '' && !Number.isNaN(pctGlobalNum);
+                                    const base = usaGlobal ? calcularPrecioTemporal(p, pctGlobalNum) : calcularPrecioFinal(p);
+                                    return <Text style={{ fontWeight: '600', color: COLORS.primary, textAlign: 'right' }}>${base.toFixed(2)}</Text>;
+                                })()}
+                            </View>
+                          </View>
+                          
+                           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, backgroundColor: '#f9f9f9', padding: 8, borderRadius: 8 }}>
+                                <Text style={{ fontSize: 12 }}>% Ganancia:</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <TouchableOpacity 
+                                        onPress={() => {
+                                            const curr = Number(porcentajesTemp[p.id] ?? p.porcentaje_aplicado ?? 45);
+                                            const next = Math.max(0, curr - 1);
+                                            handlePorcentajeChange(p.id, next);
+                                        }}
+                                        style={{ width: 30, height: 30, backgroundColor: '#e0e0e0', alignItems: 'center', justifyContent: 'center', borderRadius: 4, marginRight: 8 }}
+                                    >
+                                        <Text style={{fontSize: 18}}>-</Text>
+                                    </TouchableOpacity>
+                                    <TextInput
+                                        value={String(porcentajesTemp[p.id] ?? p.porcentaje_aplicado ?? 45)}
+                                        onChangeText={(txt) => handlePorcentajeChange(p.id, Number(txt))}
+                                        keyboardType="numeric"
+                                        style={{ width: 50, textAlign: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd', borderRadius: 4, padding: 4, fontSize: 16 }}
+                                    />
+                                    <TouchableOpacity 
+                                        onPress={() => {
+                                            const curr = Number(porcentajesTemp[p.id] ?? p.porcentaje_aplicado ?? 45);
+                                            const next = Math.min(100, curr + 1);
+                                            handlePorcentajeChange(p.id, next);
+                                        }}
+                                        style={{ width: 30, height: 30, backgroundColor: '#e0e0e0', alignItems: 'center', justifyContent: 'center', borderRadius: 4, marginLeft: 8 }}
+                                    >
+                                        <Text style={{fontSize: 18}}>+</Text>
+                                    </TouchableOpacity>
+                                </View>
+                           </View>
+
+                          <TouchableOpacity onPress={() => abrirModalEditar(p)} style={{ backgroundColor: '#2196f3', paddingVertical: 10, alignItems: 'center', borderRadius: 6 }}>
+                            <Text style={{ color: '#fff', fontWeight: '600' }}>Editar Producto</Text>
+                          </TouchableOpacity>
+                        </Card>
+                      ))}
+                    </View>
+                  ) : (
                   <ScrollView horizontal showsHorizontalScrollIndicator={true} contentContainerStyle={{ minWidth: 1080 }}>
                     <View style={{ flex: 1 }}>
                       {/* Encabezado de columnas */}
-                      <View style={{ flexDirection: 'row', paddingVertical: 8, paddingHorizontal: 8, backgroundColor: COLORS.primary, borderRadius: 8, marginBottom: 8 }}>
-                        <Text style={{ minWidth: 300, fontWeight: '600', color: COLORS.headerText }}>Producto</Text>
-                        <Text style={{ width: 80, fontWeight: '600', color: COLORS.headerText, textAlign: 'center' }}>Stock</Text>
-                        <Text style={{ width: 120, fontWeight: '600', color: COLORS.headerText, textAlign: 'right' }}>Precio costo</Text>
-                        <Text style={{ width: 160, fontWeight: '600', color: COLORS.headerText }}>% Ganancia</Text>
-                        <Text style={{ width: 140, fontWeight: '600', color: COLORS.headerText, textAlign: 'right' }}>Precio final</Text>
-                        <Text style={{ width: 100, fontWeight: '600', color: COLORS.headerText, textAlign: 'center' }}>Estado</Text>
-                        <Text style={{ width: 120, fontWeight: '600', color: COLORS.headerText }}>Acciones</Text>
+                      <View style={{ flexDirection: 'row', paddingVertical: 8, paddingHorizontal: 8, backgroundColor: COLORS.primary, borderRadius: 8, marginBottom: 8, alignItems: 'center' }}>
+                        <View style={{ width: 70, marginRight: 12 }}><Text style={{ color: '#fff', fontWeight: 'bold' }}>Imagen</Text></View>
+                        <View style={{ width: 250, paddingRight: 8 }}><Text style={{ color: '#fff', fontWeight: 'bold' }}>Producto</Text></View>
+                        <Text style={{ width: 80, fontWeight: '600', color: '#fff', textAlign: 'center' }}>Stock</Text>
+                        <Text style={{ width: 120, fontWeight: '600', color: '#fff', textAlign: 'right' }}>Precio costo</Text>
+                        <Text style={{ width: 160, fontWeight: '600', color: '#fff' }}>% Ganancia</Text>
+                        <Text style={{ width: 140, fontWeight: '600', color: '#fff', textAlign: 'right' }}>Precio final</Text>
+                        <Text style={{ width: 100, fontWeight: '600', color: '#fff', textAlign: 'center' }}>Estado</Text>
+                        <Text style={{ width: 120, fontWeight: '600', color: '#fff' }}>Acciones</Text>
                       </View>
                       {g.items.map(p => (
-                        <Card key={p.id}>
+                        <Card key={p.id} style={{ padding: 8, marginBottom: 8 }}>
                           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            {/* Imagen */}
+                            <View style={{ width: 70, marginRight: 12 }}>
+                               <Image 
+                                  source={p.imagen_principal || p.imagen ? { uri: p.imagen_principal || p.imagen } : require('../../assets/images/icon.png')}
+                                  style={{ width: 50, height: 50, borderRadius: 6, backgroundColor: '#f0f0f0' }}
+                                  resizeMode="cover"
+                                />
+                            </View>
+
                             {/* Producto */}
-                            <View style={{ minWidth: 300, paddingRight: 8 }}>
-                              <Text style={{ fontWeight: '600' }}>{p.nombre}</Text>
-                              <Text style={{ color: '#666' }}>SKU: {p.sku || '-'}</Text>
+                            <View style={{ width: 250, paddingRight: 8 }}>
+                              <Text numberOfLines={2} style={{ fontWeight: '600' }}>{p.nombre}</Text>
+                              <Text style={{ color: '#666', fontSize: 12 }}>SKU: {p.sku || '-'}</Text>
                             </View>
 
                             {/* Stock */}
@@ -518,6 +650,7 @@ export default function ProductosScreen() {
                       ))}
                     </View>
                   </ScrollView>
+                  )
                 )}
               </View>
             )}

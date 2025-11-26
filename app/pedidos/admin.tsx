@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ActivityIndicator, TouchableOpacity, ScrollView, Platform, Alert, Pressable } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import { usePedidosAdmin } from '../../hooks/usePedidosAdmin';
 import { EstadoPedido } from '../../services/pedidosAdminService';
@@ -135,7 +135,20 @@ export default function AtenderPedidosScreen() {
             <View key={p.id} style={{ borderWidth: 1, borderColor: ui.color.border, borderRadius: ui.radius.md, padding: ui.space.md, marginBottom: ui.space.md, backgroundColor: ui.color.cardBg, shadowColor: ui.shadow.color, shadowOpacity: ui.shadow.opacity, shadowRadius: ui.shadow.radius, shadowOffset: ui.shadow.offset, elevation: ui.shadow.elevation }}>
               <View style={{ height: 4, backgroundColor: colors.border, borderTopLeftRadius: ui.radius.md, borderTopRightRadius: ui.radius.md, marginHorizontal: -ui.space.md, marginTop: -ui.space.md }} />
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Text style={ui.type.title}>Pedido #{p.id}</Text>
+                {/* Título con separador azul para el número de pedido (responsivo) */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, flexWrap: 'wrap' }}>
+                  <Text style={ui.type.title}>Pedido</Text>
+                  <View style={{
+                    marginLeft: 6,
+                    paddingVertical: 2,
+                    paddingHorizontal: 8,
+                    borderRadius: ui.radius.pill,
+                    backgroundColor: '#667eea',
+                    flexShrink: 1,
+                  }}>
+                    <Text numberOfLines={1} style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>#{p.id}</Text>
+                  </View>
+                </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={[ui.type.meta, { marginRight: ui.space.sm }]}>{new Date(p.fecha).toLocaleString()}</Text>
                   <View style={{ paddingVertical: 4, paddingHorizontal: 10, backgroundColor: colors.selectedBg, borderRadius: ui.radius.pill, borderWidth: 1, borderColor: colors.border }}>

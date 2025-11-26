@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { safeAsyncStorage } from './storageUtils';
 import { API_CONFIG } from '../config/api.js';
+import { safeAsyncStorage } from './storageUtils';
 
 const API_BASE_URL = API_CONFIG.BASE_URL;
 
@@ -57,6 +57,8 @@ export interface ProductoAdmin {
   precio_costo?: number;
   precio_costo_ajustado?: number | null;
   porcentaje_aplicado?: number | null; // backend aplica default 45 cuando es null
+  imagen?: string;
+  imagen_principal?: string;
 }
 
 export interface Categoria { id: string; nombre: string; activo: boolean }

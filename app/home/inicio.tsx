@@ -4,13 +4,13 @@ import { router } from "expo-router";
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from "react-native";
 import styled from "styled-components/native";
+import { useThemeColors } from "../../contexts/SettingsContext";
 import { Product, productService } from "../../services/catalogoService";
 import { Categoria, categoriasService } from "../../services/categoriasService";
 
 // Styled Components
 const Container = styled.ScrollView`
   flex: 1;
-  background-color: #f5f5f5;
 `;
 
 const Header = styled.View`
@@ -142,10 +142,8 @@ const SectionHeader = styled.View`
 const SectionTitle = styled.Text`
   font-size: 22px;
   font-weight: 700;
-  color: #212529;
 `;
 const SeeAll = styled.Text`
-  color: #2196f3;
   font-weight: 600;
   font-size: 16px;
 `;
@@ -225,30 +223,24 @@ const CategoryCount = styled.Text`
 `;
 
 const Chip = styled.TouchableOpacity`
-  background-color: white;
   padding: 10px 14px;
   margin: 6px;
   border-radius: 20px;
   border-width: 1px;
-  border-color: #e0e0e0;
 `;
 const ChipText = styled.Text`
-  color: #333;
   font-weight: 600;
 `;
 const SearchBar = styled.View`
   flex-direction: row;
   align-items: center;
-  background-color: white;
   margin: 10px 20px 0 20px;
   border-radius: 12px;
   padding: 10px 12px;
   border-width: 1px;
-  border-color: #e0e0e0;
 `;
 const SearchInput = styled.TextInput`
   flex: 1;
-  color: #333;
 `;
 const ProductCard = styled.View`
   width: 160px;
@@ -280,7 +272,6 @@ const ProductPrice = styled.Text`
 // Nuevos componentes modernos para productos destacados
 const ModernProductCard = styled.View`
   width: 130px;
-  background-color: #fff;
   border-radius: 16px;
   margin-right: 16px;
   overflow: hidden;
@@ -298,7 +289,6 @@ const ModernProductImage = styled.Image`
 const PlaceholderImage = styled.View`
   width: 100%;
   height: 90px;
-  background-color: #f8f9fa;
   align-items: center;
   justify-content: center;
 `;
@@ -308,17 +298,14 @@ const ModernProductInfo = styled.View`
 const ModernProductName = styled.Text`
   font-size: 13px;
   font-weight: 600;
-  color: #2c3e50;
   margin-bottom: 4px;
 `;
 const ModernProductPrice = styled.Text`
   font-size: 14px;
   font-weight: 700;
-  color: #27ae60;
 `;
 const Divider = styled.View`
   height: 1px;
-  background-color: #e0e0e0;
   margin: 6px 20px 0 20px;
 `;
 
@@ -335,6 +322,7 @@ const formatPrice = (price: number | string) => {
 
 export default function InicioScreen() {
   console.log('[InicioScreen] render start');
+  const themeColors = useThemeColors();
   const [products, setProducts] = useState<Product[]>([]);
   const [featured, setFeatured] = useState<Product[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -470,7 +458,7 @@ export default function InicioScreen() {
   const greeting = getGreeting();
 
   return (
-    <Container>
+    <Container style={{ backgroundColor: themeColors.background }}>
       <Header>
         <BackgroundDecoration />
         <BackgroundDecoration2 />
@@ -485,8 +473,8 @@ export default function InicioScreen() {
       {/* Productos Destacados - Movido arriba con diseño moderno */}
       <Section>
         <SectionHeader>
-          <SectionTitle>✨ Productos Destacados</SectionTitle>
-          {loading ? <ActivityIndicator size="small" color="#2196f3" /> : <View />}
+          <SectionTitle style={{ color: themeColors.textPrimary }}>✨ Productos Destacados</SectionTitle>
+          {loading ? <ActivityIndicator size="small" color={themeColors.accent} /> : <View />}
         </SectionHeader>
 
 
@@ -510,20 +498,20 @@ export default function InicioScreen() {
                 params: { id: item.id }
               })}
             >
-              <ModernProductCard>
+              <ModernProductCard style={{ backgroundColor: themeColors.cardBackground }}>
                 {item.image ? (
                   <ModernProductImage
                     source={{ uri: item.image }}
                     resizeMode="cover"
                   />
                 ) : (
-                  <PlaceholderImage>
+                  <PlaceholderImage style={{ backgroundColor: themeColors.segmentBg }}>
                     <Text style={{ fontSize: 20 }}>📦</Text>
                   </PlaceholderImage>
                 )}
                 <ModernProductInfo>
-                  <ModernProductName numberOfLines={1}>{item.name}</ModernProductName>
-                  <ModernProductPrice>
+                  <ModernProductName numberOfLines={1} style={{ color: themeColors.textPrimary }}>{item.name}</ModernProductName>
+                  <ModernProductPrice style={{ color: themeColors.accent }}>
                     {item.price ? formatPrice(item.price) : 'Precio no disponible'}
                   </ModernProductPrice>
                 </ModernProductInfo>
@@ -532,7 +520,7 @@ export default function InicioScreen() {
           )}
           ListEmptyComponent={!loading ? (
             <View style={{ padding: 20, alignItems: 'center' }}>
-              <Text style={{ color: '#666', fontSize: 16 }}>🔍 No hay productos destacados</Text>
+              <Text style={{ color: themeColors.textSecondary, fontSize: 16 }}>🔍 No hay productos destacados</Text>
             </View>
           ) : null}
         />
@@ -561,24 +549,25 @@ export default function InicioScreen() {
       </ActionsGrid>
 
       {/* Secciones estilo Explorar para tienda */}
-      <SearchBar>
+      <SearchBar style={{ backgroundColor: themeColors.cardBackground, borderColor: themeColors.border }}>
         <Text style={{ marginRight: 6 }}>🔍</Text>
         <SearchInput
           placeholder="Buscar productos, categorías..."
-          placeholderTextColor="#999"
+          placeholderTextColor={themeColors.textSecondary}
           value={query}
           onChangeText={setQuery}
+          style={{ color: themeColors.textPrimary }}
         />
       </SearchBar>
 
       <Section>
         <SectionHeader>
-          <SectionTitle>Categorías</SectionTitle>
+          <SectionTitle style={{ color: themeColors.textPrimary }}>Categorías</SectionTitle>
           {loadingCategories ? (
-            <ActivityIndicator size="small" color="#2196f3" />
+            <ActivityIndicator size="small" color={themeColors.accent} />
           ) : (
             <TouchableOpacity onPress={() => router.push('/catalogo/explore')}>
-              <SeeAll>Ver catálogo</SeeAll>
+              <SeeAll style={{ color: themeColors.accent }}>Ver catálogo</SeeAll>
             </TouchableOpacity>
           )}
         </SectionHeader>
@@ -598,14 +587,14 @@ export default function InicioScreen() {
         ))}
       </CategoriesGrid>
 
-      <Divider />
+      <Divider style={{ backgroundColor: themeColors.border }} />
 
       {/* Estadísticas compactas */}
       <View style={{ padding: 20, paddingTop: 10 }}>
         <View style={{
           flexDirection: 'row',
           justifyContent: 'space-around',
-          backgroundColor: 'white',
+          backgroundColor: themeColors.cardBackground,
           borderRadius: 12,
           padding: 16,
           shadowColor: '#000',
@@ -616,15 +605,15 @@ export default function InicioScreen() {
         }}>
           <View style={{ alignItems: 'center' }}>
             <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#667eea' }}>{products.length}</Text>
-            <Text style={{ fontSize: 12, color: '#666', marginTop: 2 }}>Productos</Text>
+            <Text style={{ fontSize: 12, color: themeColors.textSecondary, marginTop: 2 }}>Productos</Text>
           </View>
           <View style={{ alignItems: 'center' }}>
             <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#764ba2' }}>{categories.length}</Text>
-            <Text style={{ fontSize: 12, color: '#666', marginTop: 2 }}>Categorías</Text>
+            <Text style={{ fontSize: 12, color: themeColors.textSecondary, marginTop: 2 }}>Categorías</Text>
           </View>
           <View style={{ alignItems: 'center' }}>
             <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#FF6B6B' }}>{featured.length}</Text>
-            <Text style={{ fontSize: 12, color: '#666', marginTop: 2 }}>Destacados</Text>
+            <Text style={{ fontSize: 12, color: themeColors.textSecondary, marginTop: 2 }}>Destacados</Text>
           </View>
         </View>
       </View>
