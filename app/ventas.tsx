@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { notifyOperationSuccess } from '../services/notificationsService';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { ProductoAdmin, calcularPrecioFinal, productosService } from '../services/productosService';
 import { VentaMinorista, ventasService } from '../services/ventasService';
@@ -236,6 +237,8 @@ export default function VentasScreen() {
         await ventasService.registrarMinorista(payload);
 
         Alert.alert('✅ Listo', 'Venta registrada correctamente.');
+        // Confirmación de acción via notificación local
+        notifyOperationSuccess('Venta registrada correctamente');
       }
       // Múltiples líneas: usar endpoint con carrito
       else {
@@ -250,6 +253,7 @@ export default function VentasScreen() {
         });
 
         Alert.alert('✅ Listo', `Venta registrada con ${itemsParaRegistrar.length} productos.`);
+        notifyOperationSuccess('Venta registrada correctamente');
       }
 
       limpiarFormulario();

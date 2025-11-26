@@ -1,5 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { notifyOperationSuccess } from '../services/notificationsService';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
@@ -276,6 +277,7 @@ function ComprasScreen() {
             setItems([{ id: generateUUID(), nombre: '', producto_id: '', cantidad: 1, precio_unitario: 0 }]);
 
             Alert.alert('Éxito', 'Compra registrada correctamente');
+            notifyOperationSuccess('Compra registrada correctamente');
             await cargarCompras();
         } catch (e: any) {
             console.error('Error al registrar compra:', e);

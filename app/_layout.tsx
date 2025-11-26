@@ -7,9 +7,11 @@ import React, { useEffect } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import NotificationNavigator from "../components/NotificationNavigator";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { CartProvider, useCart } from "../contexts/CartContext";
 import { SettingsProvider, useHeaderTheme, useThemeColors } from "../contexts/SettingsContext";
+import { configureNotifications, ensureDefaultSchedules } from "../services/notificationsService";
 import { useResponsive } from "../utils/responsiveUtils";
 
 function BackButton({ color = '#000' }: { color?: string }) {
@@ -200,12 +202,23 @@ export default function RootLayout() {
     console.log('[RootLayout] mounted');
   }, []);
 
+  // Inicializar notificaciones y programar recordatorios
+  useEffect(() => {
+    (async () => {
+      const granted = await configureNotifications();
+      if (granted) {
+        await ensureDefaultSchedules();
+      }
+    })();
+  }, []);
+
   return (
     <SettingsProvider>
       <AuthProvider>
         <CartProvider>
           <GestureHandlerRootView style={{ flex: 1 }}>
             <ErrorBoundary>
+              <NotificationNavigator />
               <DrawerLayout />
             </ErrorBoundary>
           </GestureHandlerRootView>
