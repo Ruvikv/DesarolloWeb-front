@@ -9,6 +9,19 @@ import 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { CartProvider, useCart } from "../contexts/CartContext";
 import { prewarmService } from "../services/prewarmService";
+import { supabase } from "../utils/supabase";
+
+async function testSupabase() {
+  const { data, error } = await supabase.from('push_tokens').select('*').limit(1);
+  console.log("Supabase test data:", data, "error:", error);
+}
+async function savePushToken(userId: string, token: string) {
+  await supabase.from('push_tokens').upsert({
+    user_id: userId,
+    token: token,
+    updated_at: new Date().toISOString()
+  });
+}
 
 async function getPushToken() {
   try {
@@ -16,6 +29,8 @@ async function getPushToken() {
       projectId: "b9fc8a7e-e7ae-42a4-a403-ce3b95f2cae2"
     });
     console.log("Token push:", token.data);
+    savePushToken("usuario_demo", token.data);
+    console.log("entró a guardar el token");
     return token.data;
   } catch (e) {
     console.error("Error al obtener el token de notificación:", e);
@@ -194,6 +209,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     testNotification();
+    testSupabase();
   }, [])
 
   useEffect(() => {
