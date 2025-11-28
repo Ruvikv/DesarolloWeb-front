@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Image, RefreshControl, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import BotonCompartir from '../../components/BotonCompartir';
 import { useCart } from '../../contexts/CartContext';
 import { Product, productService } from '../../services/catalogoService';
 import { useResponsive } from '../../utils/responsiveUtils';
@@ -84,7 +85,10 @@ export default function VisualCatalog() {
           <Image source={{ uri: item.image }} style={[styles.cardImage, { height: imageHeight }]} />
         </TouchableOpacity>
         <View style={styles.cardBody}>
-          <Text style={[styles.cardTitle, { fontSize: cardTitleSize }]} numberOfLines={2}>{item.name}</Text>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.cardTitle, { fontSize: cardTitleSize, flex: 1 }]} numberOfLines={2}>{item.name}</Text>
+            <BotonCompartir productosIds={[item.id]} variant="icon" />
+          </View>
           <Text style={[styles.cardCategory, { fontSize: cardCategorySize }]}>{item.category}</Text>
           <Text style={[styles.cardPrice, { fontSize: cardPriceSize }]}>${item.price?.toFixed?.(2) ?? item.price ?? ''}</Text>
           <TouchableOpacity style={[styles.addBtn, { paddingVertical: isMobile ? 6 : 8 }]} onPress={() => handleAddToCart(item)}>
@@ -182,10 +186,15 @@ const styles = StyleSheet.create({
   cardBody: {
     padding: 12,
   },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+    gap: 4,
+  },
   cardTitle: {
     fontWeight: '700',
     color: '#333',
-    marginBottom: 4,
   },
   cardCategory: {
     color: '#6c757d',
