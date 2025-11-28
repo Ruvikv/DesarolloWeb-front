@@ -3,11 +3,13 @@ import React from 'react';
 import { ActivityIndicator, Alert, FlatList, Linking, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCart } from '../contexts/CartContext';
+import { useNotification } from '../contexts/NotificationsContext';
 import { pedidoService } from '../services/pedidoService';
 
 export default function CarritoScreen() {
   const router = useRouter();
   const { items, totalItems, totalPrice, increaseQty, decreaseQty, removeItem, clear } = useCart();
+  const { addNotification } = useNotification();
 
   const [nombre, setNombre] = React.useState('');
   const [email, setEmail] = React.useState('');
@@ -52,6 +54,40 @@ export default function CarritoScreen() {
       } as const;
 
       await pedidoService.registrarPedidoConsumidor(payload as any);
+
+      // Notificar al admin (usando el ID del usuario actual o uno fijo si se prefiere)
+      try {
+        // ID del admin que recibe las alertas (puedes cambiarlo por el ID real del admin)
+        // Por ahora usamos el ID del usuario logueado si existe en localStorage, o un ID fijo conocido
+        let adminId = '';
+        if (typeof window !== 'undefined') {
+          const userData = localStorage.getItem('userData');
+          if (userData) {
+            adminId = JSON.parse(userData).id;
+          }
+        }
+
+        if (adminId) {
+          await import('../services/apiService').then(({ apiService }) => {
+            apiService.post('/notificaciones/enviar', {
+              user_id: adminId,
+              title: '🛍️ Nueva Compra Realizada',
+              body: `Nuevo pedido de ${nombre} por $${totalPrice.toFixed(2)}`,
+              data: { route: '/pedidos/admin' }
+            }).catch(err => console.warn('Error enviando notificación de compra:', err));
+          });
+        }
+
+        // Agregar notificación in-app
+        addNotification({
+          type: 'order',
+          title: '🛍️ Nueva Compra Realizada',
+          message: `Nuevo pedido de ${nombre} por $${totalPrice.toFixed(2)}`,
+          route: '/pedidos/admin',
+        });
+      } catch (e) {
+        console.warn('Error en lógica de notificación:', e);
+      }
 
       // Navegar a pantalla de éxito inmediatamente
       console.log('Navegando a /pedido/exito');

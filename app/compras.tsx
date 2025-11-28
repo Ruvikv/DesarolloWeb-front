@@ -1,6 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { notifyOperationSuccess } from '../services/notificationsService';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
@@ -17,7 +16,9 @@ import {
 import styled from 'styled-components/native';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationsContext';
 import { CompraItemInput, CompraListado, comprasService } from '../services/comprasService';
+import { notifyOperationSuccess } from '../services/notificationsService';
 
 // UUID generator para React Native
 function generateUUID(): string {
@@ -164,6 +165,7 @@ function ComprasScreen() {
     const { logout } = useAuth();
     const { width } = useWindowDimensions();
     const isMobile = width < 640;
+    const { addNotification } = useNotification();
 
     // Formulario de registro
     const [proveedor, setProveedor] = useState('');
@@ -278,6 +280,15 @@ function ComprasScreen() {
 
             Alert.alert('Éxito', 'Compra registrada correctamente');
             notifyOperationSuccess('Compra registrada correctamente');
+
+            // Agregar notificación in-app
+            addNotification({
+                type: 'info',
+                title: '📦 Compra Registrada',
+                message: `Compra a ${proveedor} por $${totalCompra().toFixed(2)}`,
+                route: '/compras',
+            });
+
             await cargarCompras();
         } catch (e: any) {
             console.error('Error al registrar compra:', e);

@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import { Redirect } from 'expo-router';
+import React from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
-import { useRouter } from 'expo-router';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -9,14 +9,10 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, token, isLoading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isLoading && !token) {
-      // Redirigir al login si no hay usuario autenticado
-      router.replace('/auth/login');
-    }
-  }, [token, isLoading, router]);
+  // Redirigir usando componente declarativo para evitar navegar antes de montar el Layout
+  if (!isLoading && !token) {
+    return <Redirect href="/auth/login" />;
+  }
 
   // Mostrar loading solo si se está verificando y aún no hay usuario
   if (isLoading && !token) {

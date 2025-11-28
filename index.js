@@ -1,10 +1,12 @@
+import 'expo-router/entry';
 import 'react-native-gesture-handler';
 import 'react-native-reanimated';
-import 'expo-router/entry';
 
 // Silenciar timeouts de FontFaceObserver en desarrollo web para evitar overlays
 // causados por fuentes que tardan en cargar o rutas de assets intermitentes.
-if (typeof window !== 'undefined') {
+// En React Native (Hermes), window puede existir sin addEventListener.
+// Solo registrar el handler en web/navegador.
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
   window.addEventListener('unhandledrejection', (event) => {
     try {
       const reason = event?.reason;

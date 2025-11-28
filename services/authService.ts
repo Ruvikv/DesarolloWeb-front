@@ -1,25 +1,36 @@
 import axios from 'axios';
- import { API_CONFIG } from '../config/api.js';
- 
- const apiClient = axios.create({
-   baseURL: API_CONFIG.BASE_URL,
-   timeout: 30000,
-   // Remover headers que causan preflight CORS
-   // withCredentials: true,
- });
+import { API_CONFIG } from '../config/api.js';
+
+const apiClient = axios.create({
+  baseURL: API_CONFIG.BASE_URL,
+  timeout: 30000,
+  // Remover headers que causan preflight CORS
+  // withCredentials: true,
+});
 
 // Interceptor para manejar headers sin causar preflight
 apiClient.interceptors.request.use(
-  (config) => {
+  async (config) => {
     // Solo agregar Accept header para evitar preflight
     config.headers = config.headers || {};
     config.headers['Accept'] = 'application/json';
-    
+
     // Para POST, agregar Content-Type solo si es necesario
     if (config.method === 'post' && config.data) {
       config.headers['Content-Type'] = 'application/json';
     }
-    
+
+    // Agregar token de autenticación si existe (para getProfile y otras llamadas autenticadas)
+    try {
+      const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+      const token = await AsyncStorage.getItem('authToken');
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+      }
+    } catch (e) {
+      // Si falla la lectura del token, continuar sin él
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -64,12 +75,12 @@ export const authService = {
       const userRaw = raw.user || {};
       const user = userRaw
         ? {
-            id: String(userRaw.id ?? userRaw._id ?? ''),
-            email: userRaw.email ?? '',
-            name:
-              (userRaw.name ?? [userRaw.nombre, userRaw.apellido].filter(Boolean).join(' ')).trim() ||
-              (userRaw.nombre ?? '')
-          }
+          id: String(userRaw.id ?? userRaw._id ?? ''),
+          email: userRaw.email ?? '',
+          name:
+            (userRaw.name ?? [userRaw.nombre, userRaw.apellido].filter(Boolean).join(' ')).trim() ||
+            (userRaw.nombre ?? '')
+        }
         : undefined;
 
       return {
@@ -95,8 +106,8 @@ export const authService = {
   },
 
 
-  async createProfileAdmin(nombre: string,codigo:string, apellido: string, email: string, telefono: number, password: string,direccion: string){
-    try{
+  async createProfileAdmin(nombre: string, codigo: string, apellido: string, email: string, telefono: number, password: string, direccion: string) {
+    try {
       const response = await apiClient.post('/auth/register/admin-con-codigo', {
         codigo: codigo,
         email: email,
@@ -114,8 +125,8 @@ export const authService = {
     }
   },
 
-  async createProfileRevendedor(nombreNegocio: string,nombre:string, apellido: string, condicionFiscal: string, email: string, telefono: number,password: string){
-    try{
+  async createProfileRevendedor(nombreNegocio: string, nombre: string, apellido: string, condicionFiscal: string, email: string, telefono: number, password: string) {
+    try {
       const response = await apiClient.post('/auth/register/revendedor', {
         nombreNegocio: nombreNegocio,
         nombre: nombre,
@@ -125,7 +136,7 @@ export const authService = {
         telefono: telefono,
         password: password,
       });
-      console.log("response",response)
+      console.log("response", response)
       return response.data
     } catch (error: any) {
       console.log("error", error)

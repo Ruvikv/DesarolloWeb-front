@@ -1,18 +1,22 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from 'expo-font';
+import * as Notifications from 'expo-notifications';
 import type { Href } from "expo-router";
 import { Link, usePathname, useRouter } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import React, { useEffect } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Platform, Text, TouchableOpacity, View } from "react-native";
 import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import NotificationNavigator from "../components/NotificationNavigator";
+import NotificationPanel from "../components/NotificationPanel";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { CartProvider, useCart } from "../contexts/CartContext";
+import { NotificationProvider, useNotification } from "../contexts/NotificationsContext";
 import { SettingsProvider, useHeaderTheme, useThemeColors } from "../contexts/SettingsContext";
+import { authService } from "../services/authService";
 import { configureNotifications, ensureDefaultSchedules } from "../services/notificationsService";
-import { registerStockBackgroundTask } from "../tasks/stockBackground";
+// Push notifications: registro manejado por NotificationProvider
 import { useResponsive } from "../utils/responsiveUtils";
 
 function BackButton({ color = '#000' }: { color?: string }) {
@@ -81,6 +85,40 @@ function CartButton({ color = '#000' }: { color?: string }) {
   );
 }
 
+function BellButton({ color = '#000' }: { color?: string }) {
+  const { unreadCount } = useNotification();
+  const [panelVisible, setPanelVisible] = React.useState(false);
+
+  return (
+    <>
+      <TouchableOpacity onPress={() => setPanelVisible(true)} style={{ marginLeft: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Ionicons name="notifications-outline" size={24} color={color} />
+          {unreadCount > 0 && (
+            <View style={{
+              position: 'absolute',
+              top: -4,
+              right: -4,
+              backgroundColor: '#d32f2f',
+              borderRadius: 10,
+              minWidth: 20,
+              height: 20,
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingHorizontal: 4,
+            }}>
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 10 }}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+      <NotificationPanel visible={panelVisible} onClose={() => setPanelVisible(false)} />
+    </>
+  );
+}
+
 function LogoutButton({ color = '#000' }: { color?: string }) {
   const router = useRouter();
   const { user, logout } = useAuth();
@@ -117,6 +155,57 @@ function DrawerLayout() {
     console.log('[DrawerLayout] mounted, user:', user ? 'yes' : 'no');
   }, [user]);
 
+  // Inicializar/cancelar notificaciones según token (solo cuando hay sesión)
+  useEffect(() => {
+    (async () => {
+      try {
+        if (token) {
+          const granted = await configureNotifications();
+          if (granted) {
+            let isAdmin = false;
+            try {
+              const profile = await authService.getProfile();
+              const role = (profile?.rol ?? profile?.role ?? '').toString().toUpperCase();
+              isAdmin = role.includes('ADMIN');
+            } catch { }
+
+            if (isAdmin) {
+              await ensureDefaultSchedules();
+              // Registrar tarea de fondo solo en plataformas nativas
+              if (Platform.OS !== 'web') {
+                try {
+                  const { registerStockBackgroundTask } = await import('../tasks/stockBackground');
+                  await registerStockBackgroundTask();
+                } catch (e) {
+                  console.warn('[background] register task dynamic import error:', e);
+                }
+              }
+            } else {
+              // Si no es admin, cancelar cualquiera programada y no registrar tareas de fondo
+              try { await Notifications.cancelAllScheduledNotificationsAsync(); } catch { }
+              if (Platform.OS !== 'web') {
+                try {
+                  const BackgroundFetch = await import('expo-background-fetch');
+                  await BackgroundFetch.unregisterTaskAsync('STOCK_DAILY_TASK');
+                } catch { }
+              }
+            }
+          }
+        } else {
+          try { await Notifications.cancelAllScheduledNotificationsAsync(); } catch { }
+          if (Platform.OS !== 'web') {
+            try {
+              const BackgroundFetch = await import('expo-background-fetch');
+              await BackgroundFetch.unregisterTaskAsync('STOCK_DAILY_TASK');
+            } catch { }
+          }
+        }
+      } catch (e) {
+        console.warn('[notifications] init/cancel error:', e);
+      }
+    })();
+  }, [token]);
+
   // Esperar a que AuthProvider resuelva antes de montar el Drawer.
   if (isLoading) {
     return (
@@ -136,6 +225,7 @@ function DrawerLayout() {
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 10 }}>
           <BackButton color={headerTintColor} />
+          <BellButton color={headerTintColor} />
           <CartButton color={headerTintColor} />
           <LogoutButton color={headerTintColor} />
         </View>
@@ -178,6 +268,7 @@ function DrawerLayout() {
       <Drawer.Screen name="pedidos/admin" options={{ title: "Atender pedidos", drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="ventas" options={{ drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="configuracion" options={{ drawerItemStyle: { display: 'none' } }} />
+      <Drawer.Screen name="notificaciones" options={{ title: "Notificaciones", drawerItemStyle: { display: 'none' } }} />
       {/* Módulos administrativos - solo accesibles desde dashboard */}
       <Drawer.Screen name="compras" options={{ title: "Compras", drawerItemStyle: { display: 'none' } }} />
       <Drawer.Screen name="estadisticas" options={{ title: "Estadísticas", drawerItemStyle: { display: 'none' } }} />
@@ -203,28 +294,21 @@ export default function RootLayout() {
     console.log('[RootLayout] mounted');
   }, []);
 
-  // Inicializar notificaciones y programar recordatorios
-  useEffect(() => {
-    (async () => {
-      const granted = await configureNotifications();
-      if (granted) {
-        await ensureDefaultSchedules();
-        await registerStockBackgroundTask();
-      }
-    })();
-  }, []);
+  // Inicialización de notificaciones se maneja en DrawerLayout en función del token
 
   return (
     <SettingsProvider>
       <AuthProvider>
-        <CartProvider>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <ErrorBoundary>
-              <NotificationNavigator />
-              <DrawerLayout />
-            </ErrorBoundary>
-          </GestureHandlerRootView>
-        </CartProvider>
+        <NotificationProvider>
+          <CartProvider>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <ErrorBoundary>
+                <NotificationNavigator />
+                <DrawerLayout />
+              </ErrorBoundary>
+            </GestureHandlerRootView>
+          </CartProvider>
+        </NotificationProvider>
       </AuthProvider>
     </SettingsProvider>
   );

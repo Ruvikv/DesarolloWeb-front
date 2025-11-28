@@ -7,6 +7,8 @@
 - [Servicios (services/)](#servicios-services)
 - [Contextos (contexts/)](#contextos-contexts)
 - [Pantallas](#pantallas)
+ - [Panel Admin](#panel-admin)
+ - [Notificaciones](#notificaciones)
 - [Framework y galería de estilos](#framework-y-galería-de-estilos)
 - [Cómo ejecutar](#cómo-ejecutar)
 - [Backend objetivo](#backend-objetivo)
@@ -245,9 +247,67 @@ Admin
     - Mensaje final de confirmación, envio al mail de confirmacion (Método y ruta: POST /usuarios/pedido-consumidor y limpieza del carrito)
   
 
-## Framework y galería de estilos
-- Framework: Expo + React Native con expo-router
-- Estilos: styled-components/native (v6.1.19). Componentes con props, sombras, colores y estados (chips activos, etc.). No se utiliza una librería de UI pesada para mantener control total del diseño.
+## Panel Admin
+- Acceso: `app/dashboard.tsx`, visible solo con sesión iniciada (redirección a `auth/login` si no hay token).
+- Tarjetas y acciones del panel:
+  - `Productos` → abre `/productos`. Gestiona inventario: edición de producto, imagen principal/galería, destacado.
+  - `Lista de Precios` → abre `/precios/lista`. Ajuste global y edición rápida de ítems (costo, stock, descripción) con exportación.
+  - `Catálogo Visual` → abre `/catalogo/visual`. Visualización pública del catálogo con grilla e imágenes.
+  - `Pedidos` → abre `/pedidos/admin`. Gestión y actualización de estados de pedidos de clientes (pantalla protegida).
+  - `Compras` → abre `/compras`. Registro de compras con validaciones y confirmación.
+  - `Estadísticas` → abre `/estadisticas`. Resumen económico (ventas, compras, ganancias, `alertas_stock`).
+  - `Ventas` → abre `/ventas`. Registro de ventas minoristas con cálculo de totales y notificación de éxito.
+  - `Configuración` → abre `/configuracion`. Preferencias del sistema.
+
+## Notificaciones
+
+### Sistema Dual de Notificaciones
+
+La aplicación implementa un sistema completo de notificaciones con dos componentes principales:
+
+#### 1. **Notificaciones Push** (Expo Notifications)
+- Motor: `expo-notifications` con listener en `components/NotificationNavigator.tsx`
+- **Notificaciones programadas** (solo admins):
+  - **Diaria de stock**: Tarea de fondo `STOCK_DAILY_TASK` entre 09:00–09:30
+    - Consulta `/resumen-economico/dashboard`
+    - Muestra: "Tienes N productos con stock bajo"
+    - Al tocar, navega a `/estadisticas`
+  - **Recordatorio semanal**: Lunes 10:00
+    - Programada con `ensureDefaultSchedules()`
+    - Mensaje: "Revisa las estadísticas de la semana"
+    - Al tocar, navega a `/estadisticas`
+- **Requisitos**:
+  - Sesión activa con rol `ADMIN`
+  - Token de push registrado en el backend
+  - En web, las notificaciones push no están soportadas de forma estándar
+
+#### 2. **Notificaciones In-App** (Sistema de Campanita 🔔)
+- **Componentes**:
+  - `NotificationsContext.tsx`: Gestión de estado global con persistencia en AsyncStorage
+  - `NotificationPanel.tsx`: Panel modal deslizable con lista de notificaciones
+  - `BellButton` en `_layout.tsx`: Campanita con badge de contador
+
+- **Tipos de notificaciones**:
+  - 🛍️ **order**: Nuevos pedidos de clientes
+  - 💰 **info**: Ventas y compras registradas
+  - ⚠️ **stock**: Alertas de inventario crítico
+  - 📊 **reminder**: Recordatorios y tareas pendientes
+
+- **Notificaciones automáticas**:
+  1. Nueva compra de cliente (al finalizar pedido)
+  2. Venta registrada (al registrar venta minorista)
+  3. Compra a proveedor (al registrar compra)
+  4. Recordatorio diario (al abrir dashboard, una vez por día)
+
+- **Funcionalidades**:
+  - Badge con contador de no leídas
+  - Panel modal con lista completa
+  - Navegación al tocar notificaciones
+  - Marcar como leída/eliminar/limpiar todo
+  - Persistencia en AsyncStorage
+  - Funciona en todas las plataformas (Web + Móvil)
+
+**Documentación adicional**: Ver `NOTIFICACIONES_PUSH.md` y `NOTIFICACIONES_IN_APP.md`
 
 ## Cómo ejecutar
 1) Instalar dependencias: npm install

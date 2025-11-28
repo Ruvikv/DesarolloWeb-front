@@ -1,10 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Href, useRouter } from 'expo-router';
-import React, { useEffect } from 'react';
-import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { ActivityIndicator, Dimensions, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import ProtectedRoute from '../components/ProtectedRoute';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationsContext';
 import { useThemeColors } from '../contexts/SettingsContext';
+import { sendPushNotification } from '../services/notificationsService';
 import { screenUtils, useResponsive } from '../utils/responsiveUtils';
 
 const { width } = Dimensions.get('window');
@@ -54,6 +57,27 @@ const Dashboard = () => {
   const { isMobile, isTablet, isDesktop } = useResponsive();
   const firstName = user?.name?.split(' ')[0] ?? 'Usuario';
   const themeColors = useThemeColors();
+  const [isSendingPush, setIsSendingPush] = useState(false);
+  const [pushFeedback, setPushFeedback] = useState<string | null>(null);
+  const { expoPushToken, requestPermission, addNotification } = useNotification();
+  const [permFeedback, setPermFeedback] = useState<string | null>(null);
+
+  // Recordatorio diario al abrir el dashboard
+  React.useEffect(() => {
+    const lastReminderDate = localStorage.getItem('lastDailyReminder');
+    const today = new Date().toDateString();
+
+    if (lastReminderDate !== today) {
+      // Solo mostrar una vez por día
+      addNotification({
+        type: 'reminder',
+        title: '📊 Recordatorio Diario',
+        message: 'No olvides revisar las ventas y el stock de hoy',
+        route: '/estadisticas',
+      });
+      localStorage.setItem('lastDailyReminder', today);
+    }
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -64,27 +88,33 @@ const Dashboard = () => {
     }
   };
 
-  // Protección de ruta: redirigir al login si no hay token
-  useEffect(() => {
-    if (!isLoading && !token) {
-      router.replace('/auth/login');
+  const handleEnableNotifications = async () => {
+    setPermFeedback(null);
+    const ok = await requestPermission();
+    setPermFeedback(ok ? 'Permiso concedido' : 'Permiso denegado o no disponible');
+  };
+
+  // La protección de ruta se maneja declarativamente en ProtectedRoute
+
+  const handleSendTestPush = async () => {
+    if (!user?.id) return;
+    setIsSendingPush(true);
+    setPushFeedback(null);
+    try {
+      const res = await sendPushNotification({
+        user_id: user.id,
+        title: 'Prueba de notificaciones',
+        body: 'Hola desde el backend',
+        data: { route: '/dashboard' },
+      });
+      setPushFeedback(`Enviada (sent: ${res?.sent ?? 0})`);
+    } catch (e: any) {
+      const msg = e?.message || 'Error al enviar notificación';
+      setPushFeedback(msg);
+    } finally {
+      setIsSendingPush(false);
     }
-  }, [token, isLoading, router]);
-
-  // Mostrar loading solo si se está verificando y aún no hay token
-  if (isLoading && !token) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: themeColors.background }]}>
-        <ActivityIndicator size="large" color={themeColors.accent} />
-        <Text style={[styles.loadingText, { color: themeColors.textSecondary }]}>Verificando autenticación...</Text>
-      </View>
-    );
-  }
-
-  // Si no hay token, no renderizar nada (se redirigirá)
-  if (!token) {
-    return null;
-  }
+  };
 
   const cards: CardProps[] = [
     {
@@ -154,23 +184,53 @@ const Dashboard = () => {
   ];
 
   return (
-    <ScrollView style={{ backgroundColor: themeColors.background }} contentContainerStyle={[styles.container, { padding: screenUtils.getResponsivePadding() }]} showsVerticalScrollIndicator={false}>
-      <View style={[styles.header, { marginBottom: isMobile ? 12 : 16 }]}>
-        <View>
-          <Text style={[styles.greeting, { fontSize: isMobile ? 20 : 24, color: themeColors.textPrimary }]}>Hola, {firstName} 👋</Text>
-          <Text style={[styles.welcome, { fontSize: isMobile ? 14 : 16, color: themeColors.textSecondary }]}>Panel de Control</Text>
+    <ProtectedRoute>
+      <ScrollView style={{ backgroundColor: themeColors.background }} contentContainerStyle={[styles.container, { padding: screenUtils.getResponsivePadding() }]} showsVerticalScrollIndicator={false}>
+        <View style={[styles.header, { marginBottom: isMobile ? 12 : 16 }]}>
+          <View>
+            <Text style={[styles.greeting, { fontSize: isMobile ? 20 : 24, color: themeColors.textPrimary }]}>Hola, {firstName} 👋</Text>
+            <Text style={[styles.welcome, { fontSize: isMobile ? 14 : 16, color: themeColors.textSecondary }]}>Panel de Control</Text>
+          </View>
+          <TouchableOpacity style={[styles.logoutButton, { backgroundColor: themeColors.cardBackground }, isMobile && { paddingHorizontal: 8, paddingVertical: 6 }]} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={isMobile ? 20 : 24} color={themeColors.textPrimary} />
+            {!isMobile && <Text style={[styles.logoutText, { color: themeColors.textPrimary }]}>Cerrar Sesión</Text>}
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={[styles.logoutButton, { backgroundColor: themeColors.cardBackground }, isMobile && { paddingHorizontal: 8, paddingVertical: 6 }]} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={isMobile ? 20 : 24} color={themeColors.textPrimary} />
-          {!isMobile && <Text style={[styles.logoutText, { color: themeColors.textPrimary }]}>Cerrar Sesión</Text>}
-        </TouchableOpacity>
-      </View>
-      <View style={[styles.grid, isMobile && { flexDirection: 'column' }] as any}>
-        {cards.map((card, index) => (
-          <Card key={index} {...card} />
-        ))}
-      </View>
-    </ScrollView>
+        {Platform.OS === 'web' && !!user?.id && !expoPushToken && (
+          <View style={[styles.testPushRow, { borderColor: themeColors.accent }]}>
+            <TouchableOpacity
+              style={[styles.testPushButton, { backgroundColor: themeColors.cardBackground }]}
+              onPress={handleEnableNotifications}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="notifications-outline" size={isMobile ? 18 : 20} color={themeColors.textPrimary} />
+              <Text style={[styles.testPushText, { color: themeColors.textPrimary }]}>Permitir notificaciones</Text>
+            </TouchableOpacity>
+            {permFeedback && <Text style={[styles.testPushFeedback, { color: themeColors.textSecondary }]}>{permFeedback}</Text>}
+          </View>
+        )}
+        {!!user?.id && (
+          <View style={[styles.testPushRow, { borderColor: themeColors.accent }]}>
+            <TouchableOpacity
+              style={[styles.testPushButton, { backgroundColor: themeColors.cardBackground }]}
+              onPress={handleSendTestPush}
+              disabled={isSendingPush}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="notifications-outline" size={isMobile ? 18 : 20} color={themeColors.textPrimary} />
+              <Text style={[styles.testPushText, { color: themeColors.textPrimary }]}>Enviar notificación de prueba</Text>
+            </TouchableOpacity>
+            {isSendingPush && <ActivityIndicator size="small" color={themeColors.accent} />}
+            {pushFeedback && <Text style={[styles.testPushFeedback, { color: themeColors.textSecondary }]}>{pushFeedback}</Text>}
+          </View>
+        )}
+        <View style={[styles.grid, isMobile && { flexDirection: 'column' }] as any}>
+          {cards.map((card, index) => (
+            <Card key={index} {...card} />
+          ))}
+        </View>
+      </ScrollView>
+    </ProtectedRoute>
   );
 };
 
@@ -258,5 +318,32 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     color: '#666',
+  },
+  testPushRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 10,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    marginBottom: 12,
+  },
+  testPushButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#999',
+  },
+  testPushText: {
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+  testPushFeedback: {
+    marginLeft: 8,
   },
 });
