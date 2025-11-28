@@ -3,12 +3,13 @@ import React, { useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Platform,
     StyleSheet,
     Text,
     TouchableOpacity,
     View
 } from 'react-native';
-import { compartirProductos, copiarProductosAlPortapapeles } from '../services/compartirService';
+import { compartirProducto, compartirProductos, copiarProductosAlPortapapeles } from '../services/compartirService';
 
 interface BotonCompartirProps {
     productosIds: string[];
@@ -31,7 +32,9 @@ export default function BotonCompartir({
 
         setCargando(true);
         try {
-            const resultado = await compartirProductos(productosIds);
+            const resultado = productosIds.length === 1
+                ? await compartirProducto(productosIds[0])
+                : await compartirProductos(productosIds);
 
             if (resultado.success) {
                 Alert.alert('✅ Éxito', resultado.message);
@@ -62,6 +65,11 @@ export default function BotonCompartir({
     };
 
     const mostrarOpciones = () => {
+        // En web algunos entornos no muestran correctamente Alert; ejecutar compartir directamente
+        if ((typeof navigator !== 'undefined') && (Platform.OS === 'web')) {
+            handleCompartir();
+            return;
+        }
         Alert.alert(
             '📤 Compartir Productos',
             `${productosIds.length} producto(s) seleccionado(s)`,

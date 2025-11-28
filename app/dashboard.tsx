@@ -61,22 +61,42 @@ const Dashboard = () => {
   const [pushFeedback, setPushFeedback] = useState<string | null>(null);
   const { expoPushToken, requestPermission, addNotification } = useNotification();
   const [permFeedback, setPermFeedback] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        if (!mounted) return;
+        if (!user) { setIsAdmin(false); return; }
+        // Obtener el perfil para determinar el rol real
+        const profile = await (await import('../services/authService')).authService.getProfile();
+        const role = (profile?.rol ?? profile?.role ?? '').toString().toUpperCase();
+        setIsAdmin(role.includes('ADMIN'));
+      } catch {
+        // Si falla, asumir no admin
+        setIsAdmin(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [user]);
 
   // Recordatorio diario al abrir el dashboard
   React.useEffect(() => {
-    const lastReminderDate = localStorage.getItem('lastDailyReminder');
-    const today = new Date().toDateString();
-
-    if (lastReminderDate !== today) {
-      // Solo mostrar una vez por día
-      addNotification({
-        type: 'reminder',
-        title: '📊 Recordatorio Diario',
-        message: 'No olvides revisar las ventas y el stock de hoy',
-        route: '/estadisticas',
-      });
-      localStorage.setItem('lastDailyReminder', today);
-    }
+    // Solo en web existe localStorage
+    if (Platform.OS !== 'web') return;
+    try {
+      const lastReminderDate = localStorage.getItem('lastDailyReminder');
+      const today = new Date().toDateString();
+      if (lastReminderDate !== today) {
+        addNotification({
+          type: 'reminder',
+          title: '📊 Recordatorio Diario',
+          message: 'No olvides revisar las ventas y el stock de hoy',
+          route: '/estadisticas',
+        });
+        localStorage.setItem('lastDailyReminder', today);
+      }
+    } catch {}
   }, []);
 
   const handleLogout = async () => {
@@ -135,11 +155,15 @@ const Dashboard = () => {
     },
     {
       title: 'Catálogo Visual',
-      subtitle: 'Imágenes y detalles',
+      subtitle: isAdmin ? 'Edición y destacado' : 'Imágenes y detalles',
       icon: 'images-outline',
       gradient: ['#ff6a00', '#ee0979'] as const,
-      actionLabel: 'Ver',
-      onPress: () => router.push('/catalogo/visual')
+      actionLabel: isAdmin ? 'Gestionar' : 'Ver',
+      onPress: () => router.push(
+        isAdmin
+          ? ('/catalogo/visual-admin' as Href<'/catalogo/visual-admin'>)
+          : ('/catalogo/visual' as Href<'/catalogo/visual'>)
+      )
     },
     {
       title: 'Pedidos',

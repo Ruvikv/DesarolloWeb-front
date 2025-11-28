@@ -27,9 +27,9 @@ if (process.env.NODE_ENV === 'development') {
           const https = require('https');
           const http = require('http');
 
-          // Base del backend; por defecto usar HTTP en :8081
-          // Usar HTTPS con puerto 8081 por defecto (Render)
-          const backendBase = process.env.BACKEND_URL || 'https://mi-tienda-backend-o9i7.onrender.com:8081';
+          // Base del backend: usar variable de entorno o la config del proyecto
+          const { API_CONFIG } = require('./config/api.js');
+          const backendBase = process.env.BACKEND_URL || (API_CONFIG?.BASE_URL || 'https://mi-tienda-backend-o9i7.onrender.com');
           // Construir URL destino quitando el prefijo /api
           const backendUrl = backendBase + req.url.replace('/api', '');
           const target = new URL(backendUrl);

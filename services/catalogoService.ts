@@ -1,10 +1,9 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { safeAsyncStorage } from './storageUtils';
-import { fetchWithTimeout } from './httpUtils';
-import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
+import { Platform } from 'react-native';
 import { API_CONFIG } from '../config/api.js';
-import { prewarmService } from './prewarmService';
+import { fetchWithTimeout } from './httpUtils';
+import { safeAsyncStorage } from './storageUtils';
 
 // Configuración base de la API: usar misma BASE_URL para web y nativo (se define vía EXPO_PUBLIC_API_URL o fallback)
 const API_BASE_URL = API_CONFIG.BASE_URL;
@@ -581,8 +580,8 @@ export async function toggleDestacadoAdmin(id: string, val: boolean): Promise<an
     const token = await safeAsyncStorage.getItem('authToken');
     const headers: Record<string, string> = {};
     if (token) headers.Authorization = `Bearer ${token}`;
-
-    const res = await catalogoClient.patch(`/catalogo/producto/${id}/destacado`, { destacado: val }, { headers });
+    // Según swagger: endpoint es /productos/{id}/destacar (PATCH) sin body
+    const res = await catalogoClient.patch(`/productos/${id}/destacar`, undefined, { headers });
     return res.data;
   } catch (error) {
     console.error(`Error al alternar destacado del producto ${id}:`, error);
